@@ -1,5 +1,5 @@
-import type { World } from "@app/world";
-import { upcomingFixtures } from "@app/world";
+import type { StandingsRow, World } from "@app/world";
+import { standingsForLeague, upcomingFixtures } from "@app/world";
 import type { Fixture } from "@domain/match/types";
 
 function formatDate(date: World["date"]): string {
@@ -7,7 +7,11 @@ function formatDate(date: World["date"]): string {
 }
 
 function nextFixture(world: World): Fixture | undefined {
-  return world.fixtures.find((fixture) => !fixture.played);
+  if (!world.userClubId) return undefined;
+  return world.fixtures.find(
+    (fixture) =>
+      !fixture.played && (fixture.homeId === world.userClubId || fixture.awayId === world.userClubId)
+  );
 }
 
 export function renderDashboard(world: World): string {
@@ -15,7 +19,21 @@ export function renderDashboard(world: World): string {
   const inboxPreview = world.inbox.slice(0, 4);
   const recentResults = world.results.slice(0, 4);
   const club = world.clubs.find((c) => c.id === world.userClubId);
-  const league = world.leagues.find((l) => l.id === club?.leagueId);
+  if (!club) {
+    return `
+      <section class="card hero">
+        <div class="hero-text">
+          <span class="eyebrow">Welcome</span>
+          <h2>Pick your club</h2>
+          <p>Use the setup prompt to choose a team and unlock the dashboard.</p>
+        </div>
+      </section>
+      <section class="card">
+        <p class="empty">A club selection is required to view fixtures, standings, and finances.</p>
+      </section>
+    `;
+  }
+  const league = world.leagues.find((l) => l.id === club.leagueId);
   const fixturesById = new Map(world.fixtures.map((f) => [f.id, f] as const));
   const schedule = upcomingFixtures(world, world.userClubId)
     .slice(0, 3)
@@ -25,7 +43,8 @@ export function renderDashboard(world: World): string {
       opponentId: fixture.homeId === world.userClubId ? fixture.awayId : fixture.homeId,
       date: fixture.date
     }));
-  const standings = world.standings.slice(0, 6);
+  const primaryLeagueId = club.leagueId ?? world.userLeagueId ?? world.leagues[0]?.id ?? null;
+  const standings = standingsForLeague(world, primaryLeagueId).slice(0, 6);
 
   return `
     <section class="card hero">
@@ -104,7 +123,7 @@ export function renderDashboard(world: World): string {
   `;
 }
 
-function renderStandingsPreview(world: World, standings: World["standings"]): string {
+function renderStandingsPreview(world: World, standings: StandingsRow[]): string {
   if (!standings.length) {
     return '<p class="empty">No table data yet.</p>';
   }

@@ -38,6 +38,7 @@ function persistTheme(theme: Theme): void {
 }
 
 const store = new GameStore(randomSeed());
+let seasonBootstrapped = false;
 const app = document.getElementById("app");
 
 const storedTheme = getStoredTheme();
@@ -119,6 +120,11 @@ advanceWeekButton.addEventListener("click", () => {
 
 controls.append(themeToggle, advanceDayButton, advanceWeekButton);
 
+function setControlsEnabled(enabled: boolean): void {
+  advanceDayButton.disabled = !enabled;
+  advanceWeekButton.disabled = !enabled;
+}
+
 const navTitle = document.createElement("div");
 navTitle.className = "brand";
 navTitle.innerHTML = `<span class="brand-mark">⚽</span><span class="brand-text">Manager</span>`;
@@ -138,11 +144,16 @@ interface ViewConfig {
 
 const viewHelpers: ViewHelpers = {
   simulateFixture: (fixtureId) => store.dispatch({ type: "SIMULATE_FIXTURE", payload: { fixtureId } }),
-  makeTransferBid: (playerId, offer) =>
-    store.dispatch({
+  makeTransferBid: (playerId, offer) => {
+    const clubId = store.snapshot.userClubId;
+    if (!clubId) {
+      return "Choose a club before making transfer bids.";
+    }
+    return store.dispatch({
       type: "MAKE_TRANSFER_BID",
-      payload: { playerId, buyingClubId: store.snapshot.userClubId, offer }
-    }) as string,
+      payload: { playerId, buyingClubId: clubId, offer }
+    }) as string;
+  },
   handleResult: (result) => handleCommandResult(result),
   notify
 };
@@ -187,8 +198,14 @@ function formatDate(date: World["date"]): string {
 function render(): void {
   const world = store.snapshot;
   const club = world.clubs.find((c) => c.id === world.userClubId);
-  title.textContent = club ? club.name : "HTML5 Football Manager";
-  subtitle.textContent = dateLabel(world.date);
+  setControlsEnabled(Boolean(world.userClubId));
+  if (!club) {
+    title.textContent = "Choose your club";
+    subtitle.textContent = "Select a team to begin your journey.";
+  } else {
+    title.textContent = club.name;
+    subtitle.textContent = dateLabel(world.date);
+  }
   const view = views[activeView];
   main.innerHTML = view.render(world);
   if (activeView === "tactics") {
@@ -239,12 +256,164 @@ function handleCommandResult(result: ReturnType<typeof store.dispatch>) {
   }
 }
 
+function bootstrapSeason(): void {
+  if (seasonBootstrapped) return;
+  seasonBootstrapped = true;
+  for (let i = 0; i < 3; i += 1) {
+    const result = store.dispatch({ type: "ADVANCE_DAY" });
+    handleCommandResult(result);
+  }
+}
+
+function createTeamSelectionModal() {
+  const overlay = document.createElement("div");
+  overlay.className = "modal-backdrop hidden";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+
+  const modal = document.createElement("div");
+  modal.className = "modal glass";
+
+  const header = document.createElement("div");
+  header.className = "section-heading";
+  header.innerHTML = '<span class="eyebrow">Career setup</span><h2>Select your club</h2>';
+
+  const intro = document.createElement("p");
+  intro.className = "muted-text";
+  intro.textContent = "Choose a club to manage. This choice is locked for the current session.";
+
+  const leagueList = document.createElement("div");
+  leagueList.className = "league-list";
+
+  const clubGrid = document.createElement("div");
+  clubGrid.className = "club-grid";
+
+  const footer = document.createElement("div");
+  footer.className = "modal-footer";
+
+  const confirmButton = document.createElement("button");
+  confirmButton.type = "button";
+  confirmButton.className = "primary";
+  confirmButton.textContent = "Confirm club";
+  confirmButton.disabled = true;
+
+  footer.append(confirmButton);
+  modal.append(header, intro, leagueList, clubGrid, footer);
+  overlay.append(modal);
+  document.body.appendChild(overlay);
+
+  let selectedLeagueId: ID | null = null;
+  let selectedClubId: ID | null = null;
+
+  function renderLeagueButtons(): void {
+    const world = store.snapshot;
+    const sortedLeagues = [...world.leagues].sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
+    if (!selectedLeagueId || !sortedLeagues.some((league) => league.id === selectedLeagueId)) {
+      selectedLeagueId = world.userLeagueId ?? sortedLeagues[0]?.id ?? null;
+    }
+    leagueList.innerHTML = "";
+    sortedLeagues.forEach((league) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = `${league.name} (L${league.level})`;
+      button.className = "league-option";
+      if (league.id === selectedLeagueId) {
+        button.classList.add("active");
+      }
+      button.addEventListener("click", () => {
+        selectedLeagueId = league.id;
+        renderLeagueButtons();
+        renderClubCards();
+      });
+      leagueList.append(button);
+    });
+  }
+
+  function renderClubCards(): void {
+    const world = store.snapshot;
+    clubGrid.innerHTML = "";
+    confirmButton.disabled = !selectedClubId;
+    if (!selectedLeagueId) {
+      clubGrid.innerHTML = '<p class="empty">No leagues available.</p>';
+      return;
+    }
+    const clubs = world.clubs
+      .filter((club) => club.leagueId === selectedLeagueId)
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const league = world.leagues.find((entry) => entry.id === selectedLeagueId);
+    clubs.forEach((club) => {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "club-card";
+      if (club.id === selectedClubId) {
+        card.classList.add("active");
+      }
+      const levelLabel = league ? `Level ${league.level}` : "League";
+      card.innerHTML = `
+        <div class="club-card-header">
+          <span class="badge">${levelLabel}</span>
+          <strong>${club.name}</strong>
+        </div>
+        <div class="club-meta">
+          <span>Rep ${club.rep}</span>
+          <span>£${formatBudget(club.transferBudget)} transfer</span>
+          <span>£${formatBudget(club.wageBudget)}/wk wages</span>
+        </div>
+      `;
+      card.addEventListener("click", () => {
+        selectedClubId = club.id;
+        selectedLeagueId = club.leagueId;
+        renderLeagueButtons();
+        renderClubCards();
+        confirmButton.disabled = false;
+      });
+      clubGrid.append(card);
+    });
+  }
+
+  confirmButton.addEventListener("click", () => {
+    if (!selectedClubId) {
+      notify("Select a club to continue.");
+      return;
+    }
+    store.dispatch({ type: "SET_USER_CLUB", payload: { clubId: selectedClubId } });
+    const world = store.snapshot;
+    const club = world.clubs.find((entry) => entry.id === selectedClubId);
+    notify(`You are now in charge of ${club?.name ?? "your club"}.`);
+    close();
+    bootstrapSeason();
+  });
+
+  function open(): void {
+    const world = store.snapshot;
+    selectedClubId = world.userClubId;
+    const sorted = [...world.leagues].sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
+    selectedLeagueId = world.userLeagueId ?? sorted[0]?.id ?? null;
+    renderLeagueButtons();
+    renderClubCards();
+    confirmButton.disabled = !selectedClubId;
+    overlay.classList.remove("hidden");
+  }
+
+  function close(): void {
+    overlay.classList.add("hidden");
+  }
+
+  return { open, close };
+}
+
+function formatBudget(value: number): string {
+  return new Intl.NumberFormat("en-GB", { maximumFractionDigits: 0 }).format(value);
+}
+
+const teamSelection = createTeamSelectionModal();
+
 store.subscribe(render);
 render();
 
-// auto-play opening week to give data
-for (let i = 0; i < 3; i += 1) {
-  const result = store.dispatch({ type: "ADVANCE_DAY" });
-  handleCommandResult(result);
+if (!store.snapshot.userClubId) {
+  setControlsEnabled(false);
+  teamSelection.open();
+} else {
+  bootstrapSeason();
 }
-render();

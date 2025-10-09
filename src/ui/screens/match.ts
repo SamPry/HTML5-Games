@@ -2,6 +2,9 @@ import type { World } from "@app/world";
 import { upcomingFixtures } from "@app/world";
 
 export function renderMatch(world: World): string {
+  if (!world.userClubId) {
+    return `<section class="card"><p class="empty">Select a club to view matchday reports.</p></section>`;
+  }
   const match = world.results[0];
   const nextFixtures = upcomingFixtures(world, world.userClubId);
 

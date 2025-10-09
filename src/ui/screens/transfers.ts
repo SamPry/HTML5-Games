@@ -2,6 +2,9 @@ import type { World } from "@app/world";
 
 export function renderTransfers(world: World): string {
   const club = world.clubs.find((entry) => entry.id === world.userClubId);
+  if (!club) {
+    return `<section class="card"><p class="empty">Select a club to manage transfers.</p></section>`;
+  }
   const listings = world.transferListings.filter((listing) => listing.status !== "Completed");
   const history = world.transferHistory.slice(0, 6);
 
@@ -14,15 +17,15 @@ export function renderTransfers(world: World): string {
       <div class="budget-grid">
         <div class="budget-tile">
           <span>Transfer budget</span>
-          <strong>£${formatCurrency(club?.transferBudget ?? 0)}</strong>
+          <strong>£${formatCurrency(club.transferBudget)}</strong>
         </div>
         <div class="budget-tile">
           <span>Wage budget</span>
-          <strong>£${formatCurrency(club?.wageBudget ?? 0)}/wk</strong>
+          <strong>£${formatCurrency(club.wageBudget)}/wk</strong>
         </div>
         <div class="budget-tile">
           <span>Committed wages</span>
-          <strong>£${formatCurrency(club?.wageCommitment ?? 0)}/wk</strong>
+          <strong>£${formatCurrency(club.wageCommitment)}/wk</strong>
         </div>
       </div>
     </section>

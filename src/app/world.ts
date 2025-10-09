@@ -6,7 +6,8 @@ import type { Fixture, Match } from "@domain/match/types";
 import type { TransferHistoryEntry, TransferListing } from "@domain/transfer/types";
 import { buildSchedule } from "@engine/sim/schedule";
 import { simulateMatch } from "@engine/sim/simpleMatch";
-import { premierLeagueData, type ClubTemplate, type PlayerTemplate } from "@data/premierLeague";
+import { leaguePacks } from "@data/leagues";
+import type { ClubTemplate, PlayerTemplate } from "@data/premierLeague";
 import { nanoid } from "nanoid";
 
 export interface StandingsRow {
@@ -32,10 +33,11 @@ export interface World {
   matches: Match[];
   inbox: string[];
   results: Match[];
-  standings: StandingsRow[];
+  standings: Record<ID, StandingsRow[]>;
   transferListings: TransferListing[];
   transferHistory: TransferHistoryEntry[];
-  userClubId: ID;
+  userClubId: ID | null;
+  userLeagueId: ID | null;
 }
 
 export interface DailyTickSummary {
@@ -59,48 +61,63 @@ export function createInitialWorld(seed: RNGSeed): World {
   const rng = createRNG(seed);
   const date: DateStamp = { season: START_SEASON, week: 0, day: 0 };
 
-  const league = {
-    id: premierLeagueData.id,
-    name: premierLeagueData.name,
-    nation: premierLeagueData.nation,
-    level: premierLeagueData.level,
-    clubIds: [] as ID[]
-  };
-
+  const leagues: World["leagues"] = [];
   const clubs: Club[] = [];
   const players: Player[] = [];
+  const fixtures: Fixture[] = [];
 
-  premierLeagueData.clubs.forEach((clubTemplate) => {
-    const club = createClubFromTemplate(clubTemplate);
-    league.clubIds.push(club.id);
+  leaguePacks.forEach((leagueTemplate) => {
+    const leagueClubIds: ID[] = [];
+    const leagueClubs: Club[] = [];
 
-    const squad = createPlayersFromTemplate(clubTemplate, club, date, rng);
-    club.roster.push(...squad.map((p) => p.id));
-    club.wageCommitment = squad.reduce((total, player) => total + player.wage, 0);
+    leagueTemplate.clubs.forEach((clubTemplate) => {
+      const club = createClubFromTemplate(clubTemplate, leagueTemplate.id);
+      leagueClubIds.push(club.id);
 
-    clubs.push(club);
-    players.push(...squad);
+      const squad = createPlayersFromTemplate(clubTemplate, club, date, rng);
+      club.roster.push(...squad.map((player) => player.id));
+      club.wageCommitment = squad.reduce((total, player) => total + player.wage, 0);
+
+      leagueClubs.push(club);
+      clubs.push(club);
+      players.push(...squad);
+    });
+
+    fixtures.push(...buildSchedule(leagueClubs, leagueTemplate.id, date));
+
+    leagues.push({
+      id: leagueTemplate.id,
+      name: leagueTemplate.name,
+      nation: leagueTemplate.nation,
+      level: leagueTemplate.level,
+      clubIds: leagueClubIds
+    });
   });
-
-  const fixtures = buildSchedule(clubs, league.id, date);
 
   const transferListings = seedTransferMarket(clubs, players, rng);
 
-  return {
+  const world: World = {
     seed,
     date,
-    leagues: [league],
+    leagues,
     clubs,
     players,
     fixtures,
     matches: [],
     inbox: ["Welcome to HTML5 Football Manager."],
     results: [],
-    standings: computeStandings([], clubs),
+    standings: {},
     transferListings,
     transferHistory: [],
-    userClubId: clubs.find((club) => club.id === "arsenal")?.id ?? clubs[0].id
+    userClubId: null,
+    userLeagueId: null
   };
+
+  leagues.forEach((league) => {
+    world.standings[league.id] = computeStandingsForLeague(world, league.id);
+  });
+
+  return world;
 }
 
 export function simulateDay(world: World): DailyTickSummary {
@@ -197,7 +214,8 @@ export function makeTransferBid(world: World, payload: TransferBidPayload): stri
   return `${player.name} agrees to join ${buyingClub.name}.`;
 }
 
-export function upcomingFixtures(world: World, clubId: ID): Fixture[] {
+export function upcomingFixtures(world: World, clubId: ID | null): Fixture[] {
+  if (!clubId) return [];
   return world.fixtures
     .filter((fixture) => !fixture.played && (fixture.homeId === clubId || fixture.awayId === clubId))
     .sort((a, b) => dateToNumber(a.date) - dateToNumber(b.date))
@@ -212,17 +230,16 @@ function finalizeMatch(world: World, match: Match): void {
   if (fixture) {
     fixture.played = true;
     fixture.matchId = match.id;
+    world.standings[fixture.competitionId] = computeStandingsForLeague(world, fixture.competitionId);
   }
-
-  world.standings = computeStandings(world.results, world.clubs);
 }
 
-function createClubFromTemplate(template: ClubTemplate): Club {
+function createClubFromTemplate(template: ClubTemplate, leagueId: ID): Club {
   return {
     id: template.id,
     name: template.name,
     shortName: template.shortName,
-    leagueId: premierLeagueData.id,
+    leagueId,
     roster: [],
     colors: template.colors,
     tactics: {
@@ -359,8 +376,10 @@ function seedTransferMarket(clubs: Club[], players: Player[], rng: RNG): Transfe
   return listings;
 }
 
-function computeStandings(results: Match[], clubs: Club[]): StandingsRow[] {
+function computeStandingsForLeague(world: World, leagueId: ID): StandingsRow[] {
+  const clubs = world.clubs.filter((club) => club.leagueId === leagueId);
   const table = new Map<ID, StandingsRow>();
+  const fixtureLookup = new Map(world.fixtures.map((fixture) => [fixture.id, fixture] as const));
 
   clubs.forEach((club) => {
     table.set(club.id, {
@@ -377,16 +396,20 @@ function computeStandings(results: Match[], clubs: Club[]): StandingsRow[] {
     });
   });
 
-  results
+  world.results
     .slice()
     .reverse()
     .forEach((match) => {
+      const fixture = fixtureLookup.get(match.fixtureId);
+      if (!fixture || fixture.competitionId !== leagueId) return;
+
       const fixtureClubs = [match.stats[0].clubId, match.stats[1].clubId];
       fixtureClubs.forEach((clubId, index) => {
-        const opponentId = fixtureClubs[1 - index];
         const row = table.get(clubId);
-        const opponentRow = table.get(opponentId);
-        if (!row || !opponentRow) return;
+        if (!row) return;
+
+        const opponentId = fixtureClubs[1 - index];
+        if (!table.has(opponentId)) return;
 
         const goalsFor = match.stats[index].goals;
         const goalsAgainst = match.stats[1 - index].goals;
@@ -423,6 +446,11 @@ function computeStandings(results: Match[], clubs: Club[]): StandingsRow[] {
   });
 }
 
+export function standingsForLeague(world: World, leagueId: ID | null): StandingsRow[] {
+  if (!leagueId) return [];
+  return world.standings[leagueId] ?? [];
+}
+
 function clubName(world: World, id: ID): string {
   return world.clubs.find((club) => club.id === id)?.shortName ?? "Unknown";
 }
@@ -439,7 +467,8 @@ function formatMoney(value: number): string {
   return new Intl.NumberFormat("en-GB", { notation: "compact", compactDisplay: "short" }).format(value);
 }
 
-export function scheduleSummary(world: World, clubId: ID) {
+export function scheduleSummary(world: World, clubId: ID | null) {
+  if (!clubId) return [];
   const fixtures = upcomingFixtures(world, clubId);
   return fixtures.map((fixture) => {
     const opponentId = fixture.homeId === clubId ? fixture.awayId : fixture.homeId;

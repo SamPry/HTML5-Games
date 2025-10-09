@@ -12,13 +12,14 @@ import {
   type TransferBidPayload,
   type World
 } from "@app/world";
-import type { RNGSeed } from "@core/types";
+import type { ID, RNGSeed } from "@core/types";
 
 export type WorldCommand =
   | { type: "ADVANCE_DAY" }
   | { type: "ADVANCE_DAYS"; payload: { days?: number } }
   | { type: "SIMULATE_FIXTURE"; payload: ManualSimulationPayload }
-  | { type: "MAKE_TRANSFER_BID"; payload: TransferBidPayload };
+  | { type: "MAKE_TRANSFER_BID"; payload: TransferBidPayload }
+  | { type: "SET_USER_CLUB"; payload: { clubId: ID } };
 
 interface GameState {
   world: World;
@@ -27,6 +28,7 @@ interface GameState {
   advanceDays: (days: number) => DailyTickSummary;
   runFixture: (payload: ManualSimulationPayload) => MatchResult;
   placeBid: (payload: TransferBidPayload) => string;
+  setUserClub: (clubId: ID) => void;
 }
 
 interface MatchResult {
@@ -81,6 +83,13 @@ function createGameState(seed: RNGSeed): StoreApi<GameState> {
           };
         });
         return message;
+      },
+      setUserClub: (clubId: ID) => {
+        set((state) => {
+          state.world.userClubId = clubId;
+          const club = state.world.clubs.find((entry) => entry.id === clubId);
+          state.world.userLeagueId = club?.leagueId ?? null;
+        });
       }
     }))
   );
@@ -123,6 +132,11 @@ export class GameStore {
         const message = state.placeBid(command.payload);
         this.notify();
         return message;
+      }
+      case "SET_USER_CLUB": {
+        state.setUserClub(command.payload.clubId);
+        this.notify();
+        return null;
       }
       default:
         return null;
