@@ -1,22 +1,40 @@
 import { createRNG, deriveSeed, type RNG } from "@core/rng";
-import { nextDay } from "@core/types";
-import type { DateStamp, ID, RNGSeed } from "@core/types";
-import type { Club, League } from "@domain/club/types";
-import type { Player, Position } from "@domain/player/types";
+import { addDays, nextDay, sameDate, type DateStamp, type ID, type RNGSeed } from "@core/types";
+import type { Club } from "@domain/club/types";
+import type { Player, Position, Attributes } from "@domain/player/types";
 import type { Fixture, Match } from "@domain/match/types";
+import type { TransferHistoryEntry, TransferListing } from "@domain/transfer/types";
 import { buildSchedule } from "@engine/sim/schedule";
 import { simulateMatch } from "@engine/sim/simpleMatch";
+import { premierLeagueData, type ClubTemplate, type PlayerTemplate } from "@data/premierLeague";
+import { nanoid } from "nanoid";
+
+export interface StandingsRow {
+  clubId: ID;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifference: number;
+  points: number;
+  form: string[];
+}
 
 export interface World {
   seed: RNGSeed;
   date: DateStamp;
-  leagues: League[];
+  leagues: { id: ID; name: string; nation: string; level: number; clubIds: ID[] }[];
   clubs: Club[];
   players: Player[];
   fixtures: Fixture[];
   matches: Match[];
   inbox: string[];
   results: Match[];
+  standings: StandingsRow[];
+  transferListings: TransferListing[];
+  transferHistory: TransferHistoryEntry[];
   userClubId: ID;
 }
 
@@ -25,222 +43,426 @@ export interface DailyTickSummary {
   messages: string[];
 }
 
+export interface TransferBidPayload {
+  playerId: ID;
+  buyingClubId: ID;
+  offer: number;
+}
+
+export interface ManualSimulationPayload {
+  fixtureId: ID;
+}
+
+const START_SEASON = 2024;
+
 export function createInitialWorld(seed: RNGSeed): World {
   const rng = createRNG(seed);
-  const league: League = {
-    id: "league-1",
-    name: "Founders League",
-    nation: "Neutral",
-    clubIds: [],
-    level: 1
+  const date: DateStamp = { season: START_SEASON, week: 0, day: 0 };
+
+  const league = {
+    id: premierLeagueData.id,
+    name: premierLeagueData.name,
+    nation: premierLeagueData.nation,
+    level: premierLeagueData.level,
+    clubIds: [] as ID[]
   };
 
-  const clubs: Club[] = Array.from({ length: 10 }, (_, idx) => {
-    const id = `club-${idx + 1}`;
-    league.clubIds.push(id);
-    return {
-      id,
-      name: `FC ${cityNames[idx % cityNames.length]}`,
-      shortName: `FC${idx + 1}`,
-      leagueId: league.id,
-      roster: [],
-      colors: [accentPalette[idx % accentPalette.length]],
-      tactics: {
-        formation: formations[idx % formations.length],
-        mentality: rng.pick(["Balanced", "Positive", "Cautious"]),
-        tempo: 50 + rng.nextInt(50),
-        press: 50 + rng.nextInt(50)
-      },
-      rep: 3000 + rng.nextInt(2000)
-    };
-  });
-
+  const clubs: Club[] = [];
   const players: Player[] = [];
-  clubs.forEach((club) => {
-    const rosterSize = 18;
-    for (let i = 0; i < rosterSize; i += 1) {
-      const id = `${club.id}-player-${i}`;
-      const position = defaultFormationOrder[i % defaultFormationOrder.length];
-      const currentAbility = 40 + Math.floor(rng.next() * 40);
-      const player: Player = {
-        id,
-        name: `${rng.pick(firstNames)} ${rng.pick(lastNames)}`,
-        age: 18 + Math.floor(rng.next() * 15),
-        nationality: rng.pick(["ENG", "ESP", "GER", "BRA", "ARG", "FRA", "NED"]),
-        foot: rng.pick(["Left", "Right", "Both"]),
-        positions: [position],
-        attributes: generateAttributes(rng, position, currentAbility),
-        currentAbility,
-        potentialAbility: currentAbility + 20 + Math.floor(rng.next() * 60),
-        morale: 60 + Math.floor(rng.next() * 40),
-        condition: 70 + Math.floor(rng.next() * 30),
-        sharpness: 40 + Math.floor(rng.next() * 60),
-        value: currentAbility * 25000,
-        clubId: club.id,
-        form: []
-      };
-      players.push(player);
-      club.roster.push(player.id);
-    }
+
+  premierLeagueData.clubs.forEach((clubTemplate) => {
+    const club = createClubFromTemplate(clubTemplate);
+    league.clubIds.push(club.id);
+
+    const squad = createPlayersFromTemplate(clubTemplate, club, date, rng);
+    club.roster.push(...squad.map((p) => p.id));
+    club.wageCommitment = squad.reduce((total, player) => total + player.wage, 0);
+
+    clubs.push(club);
+    players.push(...squad);
   });
 
-  const fixtures = buildSchedule(clubs, league.id, { season: 2025, week: 0, day: 0 });
+  const fixtures = buildSchedule(clubs, league.id, date);
+
+  const transferListings = seedTransferMarket(clubs, players, rng);
 
   return {
     seed,
-    date: { season: 2025, week: 0, day: 0 },
+    date,
     leagues: [league],
     clubs,
     players,
     fixtures,
     matches: [],
-    inbox: ["Welcome to HTML5 Football Manager!"],
+    inbox: ["Welcome to HTML5 Football Manager."],
     results: [],
-    userClubId: clubs[0].id
+    standings: computeStandings([], clubs),
+    transferListings,
+    transferHistory: [],
+    userClubId: clubs.find((club) => club.id === "arsenal")?.id ?? clubs[0].id
   };
 }
 
 export function simulateDay(world: World): DailyTickSummary {
-  const todaysFixtures = world.fixtures.filter(
-    (fixture) => !fixture.played && sameDate(fixture.date, world.date)
-  );
-
+  const todaysFixtures = world.fixtures.filter((fixture) => !fixture.played && sameDate(fixture.date, world.date));
   const rngSeed = deriveSeed(world.seed, world.date.week * 10 + world.date.day);
-  const matches: Match[] = todaysFixtures.map((fixture) => simulateMatch(world, fixture, rngSeed));
+  const matches = todaysFixtures.map((fixture) => simulateMatch(world, fixture, rngSeed));
 
-  matches.forEach((match) => {
-    world.matches.push(match);
-    world.results.unshift(match);
-    const fixture = world.fixtures.find((f) => f.id === match.fixtureId);
-    if (fixture) {
-      fixture.played = true;
-      fixture.matchId = match.id;
-    }
-  });
-
-  const messages = todaysFixtures.length
-    ? todaysFixtures.map((f) =>
-        `${clubName(world, f.homeId)} ${scoreLine(world, f.matchId)} ${clubName(world, f.awayId)}`
-      )
-    : ["No matches today."];
+  matches.forEach((match) => finalizeMatch(world, match));
 
   world.date = nextDay(world.date);
+
+  if (!todaysFixtures.length) {
+    return { matches: [], messages: ["No fixtures scheduled today."] };
+  }
+
+  const messages = todaysFixtures.map((fixture) => {
+    const match = world.matches.find((m) => m.fixtureId === fixture.id);
+    const home = clubName(world, fixture.homeId);
+    const away = clubName(world, fixture.awayId);
+    const score = match ? `${match.score.home}-${match.score.away}` : "vs";
+    return `${home} ${score} ${away}`;
+  });
 
   return { matches, messages };
 }
 
-function sameDate(a: DateStamp, b: DateStamp): boolean {
-  return a.season === b.season && a.week === b.week && a.day === b.day;
+export function simulateFixture(world: World, payload: ManualSimulationPayload): Match | null {
+  const fixture = world.fixtures.find((f) => f.id === payload.fixtureId);
+  if (!fixture || fixture.played) {
+    return null;
+  }
+
+  const rngSeed = deriveSeed(world.seed, Number(fixture.id.replace(/\D/g, "")) || 1);
+  const match = simulateMatch(world, fixture, rngSeed);
+  finalizeMatch(world, match);
+  return match;
 }
 
-function clubName(world: World, id: ID): string {
-  return world.clubs.find((c) => c.id === id)?.shortName ?? "Unknown";
+export function makeTransferBid(world: World, payload: TransferBidPayload): string {
+  const player = world.players.find((p) => p.id === payload.playerId);
+  if (!player || player.clubId === null) {
+    return "Selected player is unavailable.";
+  }
+
+  const sellingClub = world.clubs.find((club) => club.id === player.clubId);
+  const buyingClub = world.clubs.find((club) => club.id === payload.buyingClubId);
+
+  if (!sellingClub || !buyingClub) {
+    return "Invalid clubs for transfer bid.";
+  }
+
+  if (sellingClub.id === buyingClub.id) {
+    return "You already employ this player.";
+  }
+
+  if (payload.offer > buyingClub.transferBudget) {
+    return "Offer exceeds available transfer budget.";
+  }
+
+  const listing = world.transferListings.find((entry) => entry.playerId === player.id);
+  const askingPrice = listing?.askingPrice ?? Math.round(player.value * 1.1);
+
+  if (payload.offer < askingPrice * 0.85) {
+    listing?.interestedClubIds.push(buyingClub.id);
+    return "Bid rejected – the offer is too low.";
+  }
+
+  // Complete the transfer
+  sellingClub.transferBudget += payload.offer;
+  buyingClub.transferBudget -= payload.offer;
+  sellingClub.roster = sellingClub.roster.filter((id) => id !== player.id);
+  buyingClub.roster.push(player.id);
+  player.clubId = buyingClub.id;
+  player.transferListed = false;
+  buyingClub.wageCommitment += player.wage;
+  sellingClub.wageCommitment -= player.wage;
+
+  const historyEntry: TransferHistoryEntry = {
+    id: nanoid(),
+    playerId: player.id,
+    fromClubId: sellingClub.id,
+    toClubId: buyingClub.id,
+    fee: payload.offer,
+    date: { ...world.date }
+  };
+  world.transferHistory.unshift(historyEntry);
+
+  if (listing) {
+    listing.status = "Completed";
+  }
+
+  world.inbox.unshift(`${player.name} has signed for ${buyingClub.name} for £${formatMoney(payload.offer)}.`);
+
+  return `${player.name} agrees to join ${buyingClub.name}.`;
 }
 
-function scoreLine(world: World, matchId?: ID): string {
-  if (!matchId) return "vs";
-  const match = world.matches.find((m) => m.id === matchId);
-  if (!match) return "vs";
-  return `${match.score.home}-${match.score.away}`;
+export function upcomingFixtures(world: World, clubId: ID): Fixture[] {
+  return world.fixtures
+    .filter((fixture) => !fixture.played && (fixture.homeId === clubId || fixture.awayId === clubId))
+    .sort((a, b) => dateToNumber(a.date) - dateToNumber(b.date))
+    .slice(0, 5);
 }
 
-function generateAttributes(rng: RNG, position: string, ability: number) {
-  const base = ability / 5;
-  const randomAttribute = () => Math.max(1, Math.min(20, Math.round(base + rng.next() * 4)));
+function finalizeMatch(world: World, match: Match): void {
+  world.matches.push(match);
+  world.results.unshift(match);
+
+  const fixture = world.fixtures.find((f) => f.id === match.fixtureId);
+  if (fixture) {
+    fixture.played = true;
+    fixture.matchId = match.id;
+  }
+
+  world.standings = computeStandings(world.results, world.clubs);
+}
+
+function createClubFromTemplate(template: ClubTemplate): Club {
   return {
-    finishing: randomAttribute(),
-    firstTouch: randomAttribute(),
-    passing: randomAttribute(),
-    crossing: randomAttribute(),
-    dribbling: randomAttribute(),
-    heading: randomAttribute(),
-    tackling: randomAttribute(),
-    marking: randomAttribute(),
-    longShots: randomAttribute(),
-    setPieces: randomAttribute(),
-    decisions: randomAttribute(),
-    anticipation: randomAttribute(),
-    vision: randomAttribute(),
-    workRate: randomAttribute(),
-    bravery: randomAttribute(),
-    composure: randomAttribute(),
-    offTheBall: randomAttribute(),
-    positioning: randomAttribute(),
-    leadership: randomAttribute(),
-    flair: randomAttribute(),
-    pace: randomAttribute(),
-    acceleration: randomAttribute(),
-    strength: randomAttribute(),
-    stamina: randomAttribute(),
-    agility: randomAttribute(),
-    jumping: randomAttribute(),
-    handling: position === "GK" ? randomAttribute() : 1,
-    reflexes: position === "GK" ? randomAttribute() : 1,
-    aerial: position === "GK" ? randomAttribute() : randomAttribute(),
-    distribution: position === "GK" ? randomAttribute() : randomAttribute()
+    id: template.id,
+    name: template.name,
+    shortName: template.shortName,
+    leagueId: premierLeagueData.id,
+    roster: [],
+    colors: template.colors,
+    tactics: {
+      formation: template.formation,
+      mentality: template.mentality,
+      tempo: template.tempo,
+      press: template.press
+    },
+    rep: template.rep,
+    transferBudget: template.transferBudget,
+    wageBudget: template.wageBudget,
+    wageCommitment: 0
   };
 }
 
-const cityNames = [
-  "Avalon",
-  "Rivermouth",
-  "Highfield",
-  "Kingsport",
-  "Northhaven",
-  "Silverbrook",
-  "Westminster",
-  "Greenwich",
-  "Brighton",
-  "Southport"
-];
+function createPlayersFromTemplate(
+  template: ClubTemplate,
+  club: Club,
+  date: DateStamp,
+  rng: RNG
+): Player[] {
+  return template.players.map((playerTemplate) => ({
+    id: playerTemplate.id,
+    name: playerTemplate.name,
+    age: playerTemplate.age,
+    nationality: playerTemplate.nationality,
+    foot: playerTemplate.foot,
+    positions: playerTemplate.positions,
+    attributes: generateAttributes(playerTemplate, rng),
+    currentAbility: playerTemplate.currentAbility,
+    potentialAbility: playerTemplate.potentialAbility,
+    morale: 75 + Math.round(rng.next() * 10),
+    condition: 88 + Math.round(rng.next() * 10),
+    sharpness: 70 + Math.round(rng.next() * 15),
+    value: playerTemplate.value,
+    wage: playerTemplate.wage,
+    contractExpirySeason: date.season + playerTemplate.contractYears,
+    clubId: club.id,
+    form: [],
+    transferListed: playerTemplate.contractYears <= 2 && playerTemplate.age > 30
+  }));
+}
 
-const firstNames = [
-  "Alex",
-  "Luis",
-  "Noah",
-  "Leo",
-  "Mateo",
-  "Mason",
-  "Ethan",
-  "Kai",
-  "Luca",
-  "Owen"
-];
+function generateAttributes(template: PlayerTemplate, rng: RNG): Attributes {
+  const base = Math.max(6, Math.min(19, Math.round(template.currentAbility / 10)));
+  const jitter = () => clamp(base + Math.round((rng.next() - 0.5) * 4), 3, 20);
 
-const lastNames = [
-  "Santos",
-  "Garcia",
-  "Fischer",
-  "Johnson",
-  "Silva",
-  "Martinez",
-  "Okafor",
-  "Nguyen",
-  "Ito",
-  "Kouadio"
-];
+  const raw: Record<keyof Attributes, number> = {
+    finishing: emphasiseIf(template.positions, ["ST", "AM", "LW", "RW"], jitter, base + 1, rng),
+    firstTouch: jitter(),
+    passing: emphasiseIf(template.positions, ["CM", "DM", "AM", "RB", "LB"], jitter, base + 1, rng),
+    crossing: emphasiseIf(template.positions, ["RB", "LB", "LW", "RW"], jitter, base, rng),
+    dribbling: emphasiseIf(template.positions, ["LW", "RW", "AM", "ST"], jitter, base + 1, rng),
+    heading: emphasiseIf(template.positions, ["CB", "ST"], jitter, base, rng),
+    tackling: emphasiseIf(template.positions, ["CB", "DM", "RB", "LB"], jitter, base + 1, rng),
+    marking: emphasiseIf(template.positions, ["CB", "DM"], jitter, base + 1, rng),
+    longShots: jitter(),
+    setPieces: jitter(),
+    decisions: base + Math.round(rng.next() * 2),
+    anticipation: jitter(),
+    vision: emphasiseIf(template.positions, ["AM", "CM"], jitter, base + 1, rng),
+    workRate: base + Math.round(rng.next() * 3),
+    bravery: base + Math.round(rng.next() * 3),
+    composure: emphasiseIf(template.positions, ["ST", "AM", "CM"], jitter, base + 1, rng),
+    offTheBall: emphasiseIf(template.positions, ["ST", "AM", "LW", "RW"], jitter, base + 1, rng),
+    positioning: emphasiseIf(template.positions, ["CB", "DM"], jitter, base + 1, rng),
+    leadership: base - 1 + Math.round(rng.next() * 3),
+    flair: emphasiseIf(template.positions, ["AM", "LW", "RW"], jitter, base + 2, rng),
+    pace: emphasiseIf(template.positions, ["LW", "RW", "ST", "RB", "LB"], jitter, base + 1, rng),
+    acceleration: emphasiseIf(template.positions, ["LW", "RW", "ST"], jitter, base + 1, rng),
+    strength: emphasiseIf(template.positions, ["CB", "ST", "DM"], jitter, base, rng),
+    stamina: base + Math.round(rng.next() * 3),
+    agility: jitter(),
+    jumping: emphasiseIf(template.positions, ["CB", "ST"], jitter, base, rng),
+    handling: template.positions.includes("GK") ? base + 2 : 1,
+    reflexes: template.positions.includes("GK") ? base + 1 : 1,
+    aerial: template.positions.includes("GK") ? base + 1 : jitter(),
+    distribution: template.positions.includes("GK") ? base + 1 : jitter()
+  };
 
-const accentPalette = ["#3ecf8e", "#60a5fa", "#f97316", "#a855f7", "#facc15"];
+  const entries = Object.entries(raw) as [keyof Attributes, number][];
+  const clamped: Partial<Attributes> = {};
+  entries.forEach(([key, value]) => {
+    clamped[key] = clamp(value, 1, 20);
+  });
+  return clamped as Attributes;
+}
 
-const formations = ["4-4-2", "4-3-3", "3-5-2"];
+function emphasiseIf(
+  positions: Position[],
+  targets: Position[],
+  generator: () => number,
+  preferred: number,
+  rng: RNG
+): number {
+  if (positions.some((position) => targets.includes(position))) {
+    return clamp(preferred + Math.round((rng.next() - 0.4) * 4), 1, 20);
+  }
+  return generator();
+}
 
-const defaultFormationOrder: Position[] = [
-  "GK",
-  "RB",
-  "CB",
-  "CB",
-  "LB",
-  "CM",
-  "CM",
-  "AM",
-  "RW",
-  "LW",
-  "ST",
-  "ST",
-  "DM",
-  "CB",
-  "CM",
-  "LW",
-  "RW",
-  "ST"
-];
+function seedTransferMarket(clubs: Club[], players: Player[], rng: RNG): TransferListing[] {
+  const listings: TransferListing[] = [];
+  players
+    .filter((player) => player.transferListed)
+    .forEach((player) => {
+      listings.push({
+        playerId: player.id,
+        fromClubId: player.clubId!,
+        askingPrice: Math.round(player.value * (1 + rng.next() * 0.1)),
+        interestedClubIds: [],
+        status: "Available"
+      });
+    });
+
+  // Ensure there are at least a few attractive options
+  if (listings.length < 8) {
+    const sorted = [...players]
+      .filter((player) => player.clubId !== null)
+      .sort((a, b) => b.currentAbility - a.currentAbility);
+    for (const player of sorted) {
+      if (listings.some((entry) => entry.playerId === player.id)) continue;
+      listings.push({
+        playerId: player.id,
+        fromClubId: player.clubId!,
+        askingPrice: Math.round(player.value * 1.15),
+        interestedClubIds: [],
+        status: "Available"
+      });
+      if (listings.length >= 8) break;
+    }
+  }
+
+  return listings;
+}
+
+function computeStandings(results: Match[], clubs: Club[]): StandingsRow[] {
+  const table = new Map<ID, StandingsRow>();
+
+  clubs.forEach((club) => {
+    table.set(club.id, {
+      clubId: club.id,
+      played: 0,
+      won: 0,
+      drawn: 0,
+      lost: 0,
+      goalsFor: 0,
+      goalsAgainst: 0,
+      goalDifference: 0,
+      points: 0,
+      form: []
+    });
+  });
+
+  results
+    .slice()
+    .reverse()
+    .forEach((match) => {
+      const fixtureClubs = [match.stats[0].clubId, match.stats[1].clubId];
+      fixtureClubs.forEach((clubId, index) => {
+        const opponentId = fixtureClubs[1 - index];
+        const row = table.get(clubId);
+        const opponentRow = table.get(opponentId);
+        if (!row || !opponentRow) return;
+
+        const goalsFor = match.stats[index].goals;
+        const goalsAgainst = match.stats[1 - index].goals;
+
+        row.played += 1;
+        row.goalsFor += goalsFor;
+        row.goalsAgainst += goalsAgainst;
+        row.goalDifference = row.goalsFor - row.goalsAgainst;
+
+        if (goalsFor > goalsAgainst) {
+          row.won += 1;
+          row.points += 3;
+          row.form.push("W");
+        } else if (goalsFor === goalsAgainst) {
+          row.drawn += 1;
+          row.points += 1;
+          row.form.push("D");
+        } else {
+          row.lost += 1;
+          row.form.push("L");
+        }
+
+        if (row.form.length > 5) {
+          row.form = row.form.slice(row.form.length - 5);
+        }
+      });
+    });
+
+  return Array.from(table.values()).sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+    if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+    return clubs.findIndex((club) => club.id === a.clubId) - clubs.findIndex((club) => club.id === b.clubId);
+  });
+}
+
+function clubName(world: World, id: ID): string {
+  return world.clubs.find((club) => club.id === id)?.shortName ?? "Unknown";
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function dateToNumber(date: DateStamp): number {
+  return date.season * 1000 + date.week * 10 + date.day;
+}
+
+function formatMoney(value: number): string {
+  return new Intl.NumberFormat("en-GB", { notation: "compact", compactDisplay: "short" }).format(value);
+}
+
+export function scheduleSummary(world: World, clubId: ID) {
+  const fixtures = upcomingFixtures(world, clubId);
+  return fixtures.map((fixture) => {
+    const opponentId = fixture.homeId === clubId ? fixture.awayId : fixture.homeId;
+    return {
+      id: fixture.id,
+      opponent: clubName(world, opponentId),
+      home: fixture.homeId === clubId,
+      date: fixture.date
+    };
+  });
+}
+
+export function projectDate(date: DateStamp, daysAhead: number): DateStamp {
+  let result = { ...date };
+  for (let i = 0; i < daysAhead; i += 1) {
+    result = nextDay(result);
+  }
+  return result;
+}
+
+export function dateLabel(date: DateStamp): string {
+  return `Season ${date.season} • Week ${date.week + 1} • Day ${date.day + 1}`;
+}
+
+// re-export helper for other modules
+export { addDays };

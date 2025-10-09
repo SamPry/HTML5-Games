@@ -1,10 +1,13 @@
 import { GameStore, randomSeed } from "@app/store";
-import type { World } from "@app/world";
+import { dateLabel, type World } from "@app/world";
+import type { ID } from "@core/types";
 import { drawPitch } from "@ui/components/pitch";
 import { renderDashboard } from "@ui/screens/dashboard";
-import { renderMatch } from "@ui/screens/match";
+import { bindMatchInteractions, renderMatch } from "@ui/screens/match";
 import { renderSquad } from "@ui/screens/squad";
 import { renderTactics } from "@ui/screens/tactics";
+import { bindTransferInteractions, renderTransfers } from "@ui/screens/transfers";
+import { renderStandings } from "@ui/screens/standings";
 
 type Theme = "light" | "dark";
 
@@ -103,19 +106,15 @@ const advanceDayButton = document.createElement("button");
 advanceDayButton.textContent = "Advance Day";
 advanceDayButton.className = "primary";
 advanceDayButton.addEventListener("click", () => {
-  const summary = store.dispatch({ type: "ADVANCE_DAY" });
-  if (summary) {
-    summary.messages.forEach((message) => notify(message));
-  }
+  const result = store.dispatch({ type: "ADVANCE_DAY" });
+  handleCommandResult(result);
 });
 
 const advanceWeekButton = document.createElement("button");
 advanceWeekButton.textContent = "Advance 7 Days";
 advanceWeekButton.addEventListener("click", () => {
-  const summary = store.dispatch({ type: "ADVANCE_DAYS", payload: { days: 7 } });
-  if (summary) {
-    summary.messages.forEach((message) => notify(message));
-  }
+  const result = store.dispatch({ type: "ADVANCE_DAYS", payload: { days: 7 } });
+  handleCommandResult(result);
 });
 
 controls.append(themeToggle, advanceDayButton, advanceWeekButton);
@@ -125,11 +124,36 @@ navTitle.className = "brand";
 navTitle.innerHTML = `<span class="brand-mark">⚽</span><span class="brand-text">Manager</span>`;
 nav.append(navTitle);
 
-const views: Record<string, (world: World) => string> = {
-  dashboard: renderDashboard,
-  squad: renderSquad,
-  tactics: renderTactics,
-  match: renderMatch
+interface ViewHelpers {
+  simulateFixture: (fixtureId: ID) => ReturnType<typeof store.dispatch>;
+  makeTransferBid: (playerId: ID, offer: number) => string;
+  handleResult: (result: ReturnType<typeof store.dispatch>) => void;
+  notify: (message: string) => void;
+}
+
+interface ViewConfig {
+  render: (world: World) => string;
+  bind?: (container: HTMLElement, helpers: ViewHelpers) => void;
+}
+
+const viewHelpers: ViewHelpers = {
+  simulateFixture: (fixtureId) => store.dispatch({ type: "SIMULATE_FIXTURE", payload: { fixtureId } }),
+  makeTransferBid: (playerId, offer) =>
+    store.dispatch({
+      type: "MAKE_TRANSFER_BID",
+      payload: { playerId, buyingClubId: store.snapshot.userClubId, offer }
+    }) as string,
+  handleResult: (result) => handleCommandResult(result),
+  notify
+};
+
+const views: Record<string, ViewConfig> = {
+  dashboard: { render: renderDashboard },
+  squad: { render: renderSquad },
+  tactics: { render: renderTactics },
+  match: { render: renderMatch, bind: bindMatchInteractions },
+  standings: { render: renderStandings },
+  transfers: { render: renderTransfers, bind: bindTransferInteractions }
 };
 
 let activeView: keyof typeof views = "dashboard";
@@ -164,10 +188,14 @@ function render(): void {
   const world = store.snapshot;
   const club = world.clubs.find((c) => c.id === world.userClubId);
   title.textContent = club ? club.name : "HTML5 Football Manager";
-  subtitle.textContent = formatDate(world.date);
-  main.innerHTML = views[activeView](world);
+  subtitle.textContent = dateLabel(world.date);
+  const view = views[activeView];
+  main.innerHTML = view.render(world);
   if (activeView === "tactics") {
     drawPitch(document.getElementById("tactics-pitch") as HTMLCanvasElement | null);
+  }
+  if (view.bind) {
+    view.bind(main, viewHelpers);
   }
 }
 
@@ -198,12 +226,25 @@ function notify(message: string): void {
   list.prepend(item);
 }
 
+function handleCommandResult(result: ReturnType<typeof store.dispatch>) {
+  if (!result) return;
+  if (typeof result === "string") {
+    notify(result);
+    return;
+  }
+  if (Array.isArray((result as any).messages)) {
+    (result as any).messages.forEach((message: string) => notify(message));
+  } else if (typeof (result as any).message === "string") {
+    notify((result as any).message);
+  }
+}
+
 store.subscribe(render);
 render();
 
 // auto-play opening week to give data
 for (let i = 0; i < 3; i += 1) {
-  const summary = store.dispatch({ type: "ADVANCE_DAY" });
-  summary?.messages.forEach((message) => notify(message));
+  const result = store.dispatch({ type: "ADVANCE_DAY" });
+  handleCommandResult(result);
 }
 render();

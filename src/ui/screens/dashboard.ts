@@ -1,4 +1,5 @@
 import type { World } from "@app/world";
+import { upcomingFixtures } from "@app/world";
 import type { Fixture } from "@domain/match/types";
 
 function formatDate(date: World["date"]): string {
@@ -16,6 +17,15 @@ export function renderDashboard(world: World): string {
   const club = world.clubs.find((c) => c.id === world.userClubId);
   const league = world.leagues.find((l) => l.id === club?.leagueId);
   const fixturesById = new Map(world.fixtures.map((f) => [f.id, f] as const));
+  const schedule = upcomingFixtures(world, world.userClubId)
+    .slice(0, 3)
+    .map((fixture) => ({
+      id: fixture.id,
+      home: fixture.homeId === world.userClubId,
+      opponentId: fixture.homeId === world.userClubId ? fixture.awayId : fixture.homeId,
+      date: fixture.date
+    }));
+  const standings = world.standings.slice(0, 6);
 
   return `
     <section class="card hero">
@@ -59,6 +69,29 @@ export function renderDashboard(world: World): string {
           : "<p class=\"empty\">No matches played yet.</p>"
       }
     </section>
+    <section class="card">
+      <div class="section-heading">
+        <span class="eyebrow">Form guide</span>
+        <h2>Upcoming</h2>
+      </div>
+      ${
+        schedule.length
+          ? `<ul class="fixtures-list">${schedule
+              .map(
+                (item) =>
+                  `<li><span class="badge">${item.home ? "Home" : "Away"}</span><strong>${clubName(world, item.opponentId)}</strong><span>${formatDate(item.date)}</span></li>`
+              )
+              .join("")}</ul>`
+          : '<p class="empty">Your schedule is clear.</p>'
+      }
+    </section>
+    <section class="card">
+      <div class="section-heading">
+        <span class="eyebrow">Standings</span>
+        <h2>Top six</h2>
+      </div>
+      ${renderStandingsPreview(world, standings)}
+    </section>
     <section class="card inbox-card">
       <div class="section-heading">
         <span class="eyebrow">Inbox</span>
@@ -69,6 +102,43 @@ export function renderDashboard(world: World): string {
       </ul>
     </section>
   `;
+}
+
+function renderStandingsPreview(world: World, standings: World["standings"]): string {
+  if (!standings.length) {
+    return '<p class="empty">No table data yet.</p>';
+  }
+  return `
+    <table class="data-table compact">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Club</th>
+          <th>Pts</th>
+          <th>GD</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${standings
+          .map((row, index) => {
+            const club = world.clubs.find((c) => c.id === row.clubId);
+            return `
+              <tr>
+                <td>${index + 1}</td>
+                <td>${club?.shortName ?? row.clubId}</td>
+                <td>${row.points}</td>
+                <td>${row.goalDifference}</td>
+              </tr>
+            `;
+          })
+          .join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+function clubName(world: World, id: string): string {
+  return world.clubs.find((club) => club.id === id)?.shortName ?? id;
 }
 
 function renderSnapshotMetric(label: string, value: string): string {

@@ -27,13 +27,16 @@ export function renderSquad(world: World): string {
             <th>CA</th>
             <th>Morale</th>
             <th>Condition</th>
+            <th>Wage</th>
+            <th>Value</th>
+            <th>Contract</th>
           </tr>
         </thead>
         <tbody>
           ${players
             .map(
               (player) => {
-                const nationality = player.nationality[0] ?? "";
+                const nationality = player.nationality;
                 return `
                 <tr>
                   <td>
@@ -58,6 +61,9 @@ export function renderSquad(world: World): string {
                     <div class="meter positive" style="--value:${Math.round(player.condition)}"></div>
                     <small>${Math.round(player.condition)}%</small>
                   </td>
+                  <td>£${formatCurrency(player.wage)}/wk</td>
+                  <td>£${formatCurrency(player.value)}</td>
+                  <td>${player.contractExpirySeason}</td>
                 </tr>
               `;
               }
@@ -67,4 +73,8 @@ export function renderSquad(world: World): string {
       </table>
     </section>
   `;
+}
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat("en-GB", { maximumFractionDigits: 0 }).format(value);
 }

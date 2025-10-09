@@ -2,6 +2,14 @@
 
 A browser-based football management prototype built with TypeScript, Vite, and a canvas-driven UI. The project focuses on deterministic simulations, rich squad data, and a sleek management interface inspired by modern sports titles.
 
+## Feature highlights
+
+- ⚽ Official-style Premier League data with 10 authentic clubs and full squads.
+- 🧠 Deterministic match engine with seeded randomness and manual quick-sim controls.
+- 📈 Dynamic standings, form trackers, and dashboard summaries for your chosen club.
+- 🤝 Transfer market with budgets, valuations, and instant bid resolution.
+- 🎨 Dual light/dark themes with a glassmorphic layout optimised for desktop and tablet.
+
 ## Getting started
 
 1. Install dependencies: `npm install`
