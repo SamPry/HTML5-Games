@@ -67,6 +67,16 @@ export function renderSquad(world: World): string {
                 </tr>
               `;
               }
+              (player) => `
+                <tr>
+                  <td>${player.name}</td>
+                  <td>${player.positions.join(", ")}</td>
+                  <td>${player.age}</td>
+                  <td>${player.currentAbility}</td>
+                  <td>${Math.round(player.morale)}</td>
+                  <td>${Math.round(player.condition)}%</td>
+                </tr>
+              `
             )
             .join("")}
         </tbody>
