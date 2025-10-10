@@ -9,6 +9,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "types": ["vite/client"],
+    "typeRoots": ["./node_modules/@types", "./node_modules", "./src/types"],
     "baseUrl": "./src",
     "paths": {
       "@app/*": ["app/*"],

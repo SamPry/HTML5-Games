@@ -60,8 +60,11 @@ export interface Player {
   condition: number;
   sharpness: number;
   value: number;
+  wage: number;
+  contractExpirySeason: number;
   clubId: ID | null;
   form: number[];
+  transferListed?: boolean;
 }
 
 export interface PlayerMatchStats {

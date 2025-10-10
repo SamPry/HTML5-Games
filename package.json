@@ -6,7 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:standalone": "vite build --config vite.standalone.config.ts",
     "preview": "vite preview"
+  },
+  "dependencies": {
+    "date-fns": "^3.6.0",
+    "immer": "^10.1.1",
+    "nanoid": "^5.0.7",
+    "zustand": "^4.5.2"
   },
   "devDependencies": {
     "typescript": "^5.4.5",

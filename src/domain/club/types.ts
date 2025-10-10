@@ -17,6 +17,10 @@ export interface Club {
   colors: string[];
   tactics: TacticsProfile;
   rep: number;
+  marketValue: number;
+  transferBudget: number;
+  wageBudget: number;
+  wageCommitment: number;
 }
 
 export interface LineupSlot {

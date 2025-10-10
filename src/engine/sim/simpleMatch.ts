@@ -123,19 +123,20 @@ function runSimulation(input: MatchInput, rng: ReturnType<typeof createRNG>) {
     possession: Math.round(awayPossession)
   };
 
-  const playerStats: PlayerMatchStats[] = [...input.homePlayers, ...input.awayPlayers].map(
-    (player) => ({
+  const playerStats: PlayerMatchStats[] = [...input.homePlayers, ...input.awayPlayers].map((player) => {
+    const abilityBoost = (player.currentAbility - 140) / 80;
+    const rating = clamp(6.2 + rng.next() * 1.6 + abilityBoost, 5.0, 10);
+    return {
       playerId: player.id,
-      rating: 6.5 + rng.next() * 1.5 + (player.currentAbility - 40) / 60,
+      rating,
       minutes: 90,
-      goals:
-        events.filter((event) => event.type === "Goal" && event.playerId === player.id).length,
+      goals: events.filter((event) => event.type === "Goal" && event.playerId === player.id).length,
       assists: 0,
       shots: Math.round(rng.next() * 3),
       passesCompleted: Math.round(rng.next() * 40),
       tacklesWon: Math.round(rng.next() * 5)
-    })
-  );
+    };
+  });
 
   return {
     homeScore: homeGoals,
