@@ -7,7 +7,7 @@ import { bindMatchInteractions, renderMatch } from "@ui/screens/match";
 import { renderSquad } from "@ui/screens/squad";
 import { renderTactics } from "@ui/screens/tactics";
 import { bindTransferInteractions, renderTransfers } from "@ui/screens/transfers";
-import { renderStandings } from "@ui/screens/standings";
+import { bindStandingsInteractions, renderStandings } from "@ui/screens/standings";
 
 type Theme = "light" | "dark";
 
@@ -44,6 +44,7 @@ const app = document.getElementById("app");
 const storedTheme = getStoredTheme();
 let userSelectedTheme = storedTheme !== null;
 let activeTheme: Theme = storedTheme ?? detectSystemTheme();
+let standingsLeagueId: ID | null = null;
 
 const themeToggle = document.createElement("button");
 themeToggle.type = "button";
@@ -163,7 +164,22 @@ const views: Record<string, ViewConfig> = {
   squad: { render: renderSquad },
   tactics: { render: renderTactics },
   match: { render: renderMatch, bind: bindMatchInteractions },
-  standings: { render: renderStandings },
+  standings: {
+    render: (world) => {
+      if (!standingsLeagueId || !world.leagues.some((league) => league.id === standingsLeagueId)) {
+        standingsLeagueId = world.userLeagueId ?? world.leagues[0]?.id ?? null;
+      }
+      return renderStandings(world, standingsLeagueId);
+    },
+    bind: (container) => {
+      bindStandingsInteractions(container, {
+        onLeagueChange: (leagueId) => {
+          standingsLeagueId = leagueId;
+          render();
+        }
+      });
+    }
+  },
   transfers: { render: renderTransfers, bind: bindTransferInteractions }
 };
 
@@ -377,6 +393,7 @@ function createTeamSelectionModal() {
       return;
     }
     store.dispatch({ type: "SET_USER_CLUB", payload: { clubId: selectedClubId } });
+    standingsLeagueId = store.snapshot.userLeagueId ?? standingsLeagueId;
     const world = store.snapshot;
     const club = world.clubs.find((entry) => entry.id === selectedClubId);
     notify(`You are now in charge of ${club?.name ?? "your club"}.`);
