@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HTML5 Football Manager</title>
+    <link rel="stylesheet" href="src/styles.css" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      const loadStandaloneBundle = async () => {
+        try {
+          const fallbackEntry = "./standalone/main.js";
+          await import(/* @vite-ignore */ fallbackEntry);
+        } catch (fallbackError) {
+          console.error("Failed to load fallback bundle", fallbackError);
+          const container = document.getElementById("app");
+          if (container) {
+            container.innerHTML =
+              '<div style="padding:24px;max-width:600px;margin:48px auto;font-family:system-ui;text-align:center;border-radius:16px;background:rgba(0,0,0,0.55);color:#fff;">' +
+              '<h1 style="margin-top:0;">Unable to start the simulator</h1>' +
+              '<p style="line-height:1.5;">Neither the TypeScript sources nor the prebuilt bundle could be loaded. Ensure the files are available and reload the page.</p>' +
+              "</div>";
+          }
+        }
+      };
+
+      const bootstrap = async () => {
+        try {
+          await import("/src/main.ts");
+        } catch (error) {
+          console.warn("Falling back to standalone bundle", error);
+          await loadStandaloneBundle();
+        }
+      };
+
+      bootstrap();
+    </script>
+  </body>
+</html>
