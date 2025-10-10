@@ -993,6 +993,17 @@ body {
   transition: transform 0.2s ease, border 0.2s ease, box-shadow 0.2s ease;
 }
 
+.club-card.create {
+  border-style: dashed;
+  border-color: rgba(var(--accent-rgb), 0.4);
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--accent);
+}
+
+.club-card.create:hover {
+  background: rgba(var(--accent-rgb), 0.14);
+}
+
 .club-card:hover,
 .club-card.active {
   border-color: rgba(var(--accent-rgb), 0.5);
@@ -1025,4 +1036,84 @@ body {
 
 .club-meta span {
   display: inline-block;
+}
+
+.custom-club-panel {
+  position: relative;
+}
+
+.custom-club-panel.hidden {
+  display: none;
+}
+
+.custom-club-form {
+  display: grid;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
+  border-radius: var(--radius-lg);
+  background: rgba(var(--background-rgb), 0.7);
+  backdrop-filter: blur(26px);
+}
+
+.custom-club-form .muted-text {
+  margin-top: -4px;
+}
+
+.custom-club-form .modal-footer {
+  margin-top: 4px;
+  justify-content: space-between;
+}
+
+.field,
+.field-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+
+.field-inline input {
+  max-width: 120px;
+}
+
+.field span,
+.field-inline span {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.field input,
+.field select,
+.field-inline input,
+.field-inline select {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  color: inherit;
+}
+
+.field.colors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.field.colors label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.field.colors input[type="color"] {
+  width: 100%;
+  height: 44px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
+  background: transparent;
+  cursor: pointer;
 }

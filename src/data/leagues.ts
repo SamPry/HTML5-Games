@@ -26,6 +26,7 @@ interface SyntheticClubConfig {
   transferBudget?: number;
   wageBudget?: number;
   rep?: number;
+  marketValue?: number;
   nationality?: string;
   qualityDelta?: number;
 }
@@ -102,6 +103,13 @@ function createSyntheticClub(club: SyntheticClubConfig, league: SyntheticLeagueC
   const qualityDelta = club.qualityDelta ?? 0;
   const nationality = club.nationality ?? league.nationCode;
   const baseAbility = preset.baseAbility + qualityDelta;
+  const marketValue =
+    club.marketValue ??
+    Math.round(Math.max(28_000_000, (baseAbility - 90) * (baseAbility - 88) * 60_000));
+  const transferBudget = club.transferBudget ?? Math.round(marketValue * 0.085);
+  const wageBudget = club.wageBudget ?? Math.round(Math.max(preset.wageBudget, marketValue * 0.0022));
+  const rep =
+    club.rep ?? Math.round(Math.min(9300, preset.rep + Math.log10(marketValue / 1_000_000) * 460));
 
   return {
     id: club.id,
@@ -112,14 +120,19 @@ function createSyntheticClub(club: SyntheticClubConfig, league: SyntheticLeagueC
     mentality: club.mentality ?? "Balanced",
     tempo: club.tempo ?? preset.tempo,
     press: club.press ?? preset.press,
-    rep: club.rep ?? preset.rep,
-    transferBudget: club.transferBudget ?? preset.transferBudget,
-    wageBudget: club.wageBudget ?? preset.wageBudget,
+    rep,
+    marketValue,
+    transferBudget,
+    wageBudget,
     players: createSyntheticSquad(club.id, nationality, baseAbility)
   };
 }
 
-function createSyntheticSquad(clubId: string, nationality: string, baseAbility: number): PlayerTemplate[] {
+export function createSyntheticSquad(
+  clubId: string,
+  nationality: string,
+  baseAbility: number
+): PlayerTemplate[] {
   const pool = namesByNation[nationality] ?? defaultNames;
   const seed = hashString(clubId);
   return squadBlueprint.map((slot, index) => {
@@ -167,16 +180,16 @@ const syntheticLeagues: LeagueData[] = [
     level: 1,
     nationCode: "ESP",
     clubs: [
-      { id: "real-madrid", name: "Real Madrid", shortName: "RMA", colors: ["#ffffff", "#3a296d"], strength: "elite", mentality: "Positive", qualityDelta: 6 },
-      { id: "barcelona", name: "FC Barcelona", shortName: "BAR", colors: ["#004d98", "#a50044"], strength: "elite", mentality: "Positive", tempo: 68, press: 70 },
-      { id: "atletico-madrid", name: "Atlético Madrid", shortName: "ATL", colors: ["#c8102e", "#041e42"], strength: "contender", mentality: "Cautious" },
-      { id: "real-sociedad", name: "Real Sociedad", shortName: "RSO", colors: ["#005aa7", "#ffffff"], strength: "challenger" },
-      { id: "villarreal", name: "Villarreal", shortName: "VIL", colors: ["#fbe106", "#0b1f8c"], strength: "challenger", mentality: "Positive" },
-      { id: "sevilla", name: "Sevilla", shortName: "SEV", colors: ["#ffffff", "#ff0000"], strength: "challenger" },
-      { id: "real-betis", name: "Real Betis", shortName: "BET", colors: ["#00965e", "#ffffff"], strength: "solid" },
-      { id: "athletic-club", name: "Athletic Club", shortName: "ATH", colors: ["#da1212", "#ffffff"], strength: "solid" },
-      { id: "valencia", name: "Valencia CF", shortName: "VAL", colors: ["#ff8200", "#000000"], strength: "solid" },
-      { id: "girona", name: "Girona FC", shortName: "GIR", colors: ["#e5002b", "#ffffff"], strength: "rising" }
+      { id: "real-madrid", name: "Real Madrid", shortName: "RMA", colors: ["#ffffff", "#3a296d"], strength: "elite", mentality: "Positive", qualityDelta: 6, marketValue: 1_050_000_000 },
+      { id: "barcelona", name: "FC Barcelona", shortName: "BAR", colors: ["#004d98", "#a50044"], strength: "elite", mentality: "Positive", tempo: 68, press: 70, marketValue: 1_020_000_000 },
+      { id: "atletico-madrid", name: "Atlético Madrid", shortName: "ATL", colors: ["#c8102e", "#041e42"], strength: "contender", mentality: "Cautious", marketValue: 620_000_000 },
+      { id: "real-sociedad", name: "Real Sociedad", shortName: "RSO", colors: ["#005aa7", "#ffffff"], strength: "challenger", marketValue: 410_000_000 },
+      { id: "villarreal", name: "Villarreal", shortName: "VIL", colors: ["#fbe106", "#0b1f8c"], strength: "challenger", mentality: "Positive", marketValue: 360_000_000 },
+      { id: "sevilla", name: "Sevilla", shortName: "SEV", colors: ["#ffffff", "#ff0000"], strength: "challenger", marketValue: 280_000_000 },
+      { id: "real-betis", name: "Real Betis", shortName: "BET", colors: ["#00965e", "#ffffff"], strength: "solid", marketValue: 250_000_000 },
+      { id: "athletic-club", name: "Athletic Club", shortName: "ATH", colors: ["#da1212", "#ffffff"], strength: "solid", marketValue: 305_000_000 },
+      { id: "valencia", name: "Valencia CF", shortName: "VAL", colors: ["#ff8200", "#000000"], strength: "solid", marketValue: 220_000_000 },
+      { id: "girona", name: "Girona FC", shortName: "GIR", colors: ["#e5002b", "#ffffff"], strength: "rising", marketValue: 215_000_000 }
     ]
   }),
   createSyntheticLeague({
@@ -186,16 +199,16 @@ const syntheticLeagues: LeagueData[] = [
     level: 1,
     nationCode: "ITA",
     clubs: [
-      { id: "inter", name: "Inter", shortName: "INT", colors: ["#1b65be", "#000000"], strength: "elite", mentality: "Positive", press: 69 },
-      { id: "juventus", name: "Juventus", shortName: "JUV", colors: ["#000000", "#ffffff"], strength: "elite", mentality: "Balanced" },
-      { id: "ac-milan", name: "AC Milan", shortName: "MIL", colors: ["#a50044", "#000000"], strength: "contender", mentality: "Positive" },
-      { id: "napoli", name: "Napoli", shortName: "NAP", colors: ["#0078d7", "#002654"], strength: "contender" },
-      { id: "roma", name: "AS Roma", shortName: "ROM", colors: ["#8e1f1f", "#f7a81b"], strength: "challenger" },
-      { id: "lazio", name: "Lazio", shortName: "LAZ", colors: ["#65aadb", "#ffffff"], strength: "challenger" },
-      { id: "atalanta", name: "Atalanta", shortName: "ATA", colors: ["#1f4e8c", "#000000"], strength: "challenger" },
-      { id: "fiorentina", name: "Fiorentina", shortName: "FIO", colors: ["#592d82", "#ffffff"], strength: "solid" },
-      { id: "bologna", name: "Bologna", shortName: "BOL", colors: ["#a6192e", "#132257"], strength: "solid" },
-      { id: "torino", name: "Torino", shortName: "TOR", colors: ["#7f1d1d", "#ffffff"], strength: "solid" }
+      { id: "inter", name: "Inter", shortName: "INT", colors: ["#1b65be", "#000000"], strength: "elite", mentality: "Positive", press: 69, marketValue: 700_000_000 },
+      { id: "juventus", name: "Juventus", shortName: "JUV", colors: ["#000000", "#ffffff"], strength: "elite", mentality: "Balanced", marketValue: 650_000_000 },
+      { id: "ac-milan", name: "AC Milan", shortName: "MIL", colors: ["#a50044", "#000000"], strength: "contender", mentality: "Positive", marketValue: 560_000_000 },
+      { id: "napoli", name: "Napoli", shortName: "NAP", colors: ["#0078d7", "#002654"], strength: "contender", marketValue: 520_000_000 },
+      { id: "roma", name: "AS Roma", shortName: "ROM", colors: ["#8e1f1f", "#f7a81b"], strength: "challenger", marketValue: 380_000_000 },
+      { id: "lazio", name: "Lazio", shortName: "LAZ", colors: ["#65aadb", "#ffffff"], strength: "challenger", marketValue: 360_000_000 },
+      { id: "atalanta", name: "Atalanta", shortName: "ATA", colors: ["#1f4e8c", "#000000"], strength: "challenger", marketValue: 350_000_000 },
+      { id: "fiorentina", name: "Fiorentina", shortName: "FIO", colors: ["#592d82", "#ffffff"], strength: "solid", marketValue: 290_000_000 },
+      { id: "bologna", name: "Bologna", shortName: "BOL", colors: ["#a6192e", "#132257"], strength: "solid", marketValue: 240_000_000 },
+      { id: "torino", name: "Torino", shortName: "TOR", colors: ["#7f1d1d", "#ffffff"], strength: "solid", marketValue: 210_000_000 }
     ]
   }),
   createSyntheticLeague({
@@ -205,16 +218,16 @@ const syntheticLeagues: LeagueData[] = [
     level: 1,
     nationCode: "GER",
     clubs: [
-      { id: "bayern", name: "Bayern Munich", shortName: "FCB", colors: ["#dc052d", "#0066b2"], strength: "elite", mentality: "Positive", tempo: 70 },
-      { id: "dortmund", name: "Borussia Dortmund", shortName: "BVB", colors: ["#fdd102", "#000000"], strength: "contender", mentality: "Positive" },
-      { id: "rb-leipzig", name: "RB Leipzig", shortName: "RBL", colors: ["#d72027", "#ffffff"], strength: "contender" },
-      { id: "leverkusen", name: "Bayer Leverkusen", shortName: "B04", colors: ["#e32219", "#000000"], strength: "challenger" },
-      { id: "union-berlin", name: "Union Berlin", shortName: "FCU", colors: ["#e31b23", "#f4c300"], strength: "challenger", mentality: "Cautious" },
-      { id: "freiburg", name: "SC Freiburg", shortName: "SCF", colors: ["#000000", "#ffffff"], strength: "solid" },
-      { id: "stuttgart", name: "VfB Stuttgart", shortName: "VFB", colors: ["#ed2939", "#ffffff"], strength: "solid" },
-      { id: "frankfurt", name: "Eintracht Frankfurt", shortName: "SGE", colors: ["#e60026", "#000000"], strength: "solid" },
-      { id: "monchengladbach", name: "Borussia M'Gladbach", shortName: "BMG", colors: ["#0b5c0b", "#ffffff"], strength: "solid" },
-      { id: "wolfsburg", name: "Wolfsburg", shortName: "WOB", colors: ["#14b53a", "#ffffff"], strength: "solid" }
+      { id: "bayern", name: "Bayern Munich", shortName: "FCB", colors: ["#dc052d", "#0066b2"], strength: "elite", mentality: "Positive", tempo: 70, marketValue: 970_000_000 },
+      { id: "dortmund", name: "Borussia Dortmund", shortName: "BVB", colors: ["#fdd102", "#000000"], strength: "contender", mentality: "Positive", marketValue: 650_000_000 },
+      { id: "rb-leipzig", name: "RB Leipzig", shortName: "RBL", colors: ["#d72027", "#ffffff"], strength: "contender", marketValue: 510_000_000 },
+      { id: "leverkusen", name: "Bayer Leverkusen", shortName: "B04", colors: ["#e32219", "#000000"], strength: "challenger", marketValue: 610_000_000 },
+      { id: "union-berlin", name: "Union Berlin", shortName: "FCU", colors: ["#e31b23", "#f4c300"], strength: "challenger", mentality: "Cautious", marketValue: 220_000_000 },
+      { id: "freiburg", name: "SC Freiburg", shortName: "SCF", colors: ["#000000", "#ffffff"], strength: "solid", marketValue: 210_000_000 },
+      { id: "stuttgart", name: "VfB Stuttgart", shortName: "VFB", colors: ["#ed2939", "#ffffff"], strength: "solid", marketValue: 270_000_000 },
+      { id: "frankfurt", name: "Eintracht Frankfurt", shortName: "SGE", colors: ["#e60026", "#000000"], strength: "solid", marketValue: 250_000_000 },
+      { id: "monchengladbach", name: "Borussia M'Gladbach", shortName: "BMG", colors: ["#0b5c0b", "#ffffff"], strength: "solid", marketValue: 220_000_000 },
+      { id: "wolfsburg", name: "Wolfsburg", shortName: "WOB", colors: ["#14b53a", "#ffffff"], strength: "solid", marketValue: 200_000_000 }
     ]
   }),
   createSyntheticLeague({
@@ -224,16 +237,16 @@ const syntheticLeagues: LeagueData[] = [
     level: 1,
     nationCode: "FRA",
     clubs: [
-      { id: "psg", name: "Paris Saint-Germain", shortName: "PSG", colors: ["#004170", "#e30613"], strength: "elite", mentality: "Positive", press: 72 },
-      { id: "marseille", name: "Marseille", shortName: "OM", colors: ["#00a3e0", "#ffffff"], strength: "contender", mentality: "Positive" },
-      { id: "monaco", name: "AS Monaco", shortName: "ASM", colors: ["#e2001a", "#ffffff"], strength: "contender" },
-      { id: "lyon", name: "Lyon", shortName: "OL", colors: ["#273e8c", "#e60012"], strength: "challenger" },
-      { id: "lille", name: "Lille", shortName: "LIL", colors: ["#e2001a", "#1b3f8b"], strength: "challenger" },
-      { id: "rennes", name: "Rennes", shortName: "REN", colors: ["#e41b17", "#1d1d1b"], strength: "challenger" },
-      { id: "nice", name: "Nice", shortName: "NCE", colors: ["#a00000", "#000000"], strength: "solid" },
-      { id: "lens", name: "Lens", shortName: "RCL", colors: ["#f4d130", "#c30404"], strength: "solid" },
-      { id: "nantes", name: "Nantes", shortName: "NAN", colors: ["#ffe600", "#007a33"], strength: "rising" },
-      { id: "reims", name: "Reims", shortName: "REI", colors: ["#d40000", "#ffffff"], strength: "rising" }
+      { id: "psg", name: "Paris Saint-Germain", shortName: "PSG", colors: ["#004170", "#e30613"], strength: "elite", mentality: "Positive", press: 72, marketValue: 890_000_000 },
+      { id: "marseille", name: "Marseille", shortName: "OM", colors: ["#00a3e0", "#ffffff"], strength: "contender", mentality: "Positive", marketValue: 330_000_000 },
+      { id: "monaco", name: "AS Monaco", shortName: "ASM", colors: ["#e2001a", "#ffffff"], strength: "contender", marketValue: 350_000_000 },
+      { id: "lyon", name: "Lyon", shortName: "OL", colors: ["#273e8c", "#e60012"], strength: "challenger", marketValue: 320_000_000 },
+      { id: "lille", name: "Lille", shortName: "LIL", colors: ["#e2001a", "#1b3f8b"], strength: "challenger", marketValue: 320_000_000 },
+      { id: "rennes", name: "Rennes", shortName: "REN", colors: ["#e41b17", "#1d1d1b"], strength: "challenger", marketValue: 310_000_000 },
+      { id: "nice", name: "Nice", shortName: "NCE", colors: ["#a00000", "#000000"], strength: "solid", marketValue: 290_000_000 },
+      { id: "lens", name: "Lens", shortName: "RCL", colors: ["#f4d130", "#c30404"], strength: "solid", marketValue: 280_000_000 },
+      { id: "nantes", name: "Nantes", shortName: "NAN", colors: ["#ffe600", "#007a33"], strength: "rising", marketValue: 145_000_000 },
+      { id: "reims", name: "Reims", shortName: "REI", colors: ["#d40000", "#ffffff"], strength: "rising", marketValue: 170_000_000 }
     ]
   }),
   createSyntheticLeague({
@@ -243,16 +256,16 @@ const syntheticLeagues: LeagueData[] = [
     level: 1,
     nationCode: "NED",
     clubs: [
-      { id: "ajax", name: "Ajax", shortName: "AJA", colors: ["#ffffff", "#d20a0a"], strength: "contender", mentality: "Positive" },
-      { id: "psv", name: "PSV", shortName: "PSV", colors: ["#ff0000", "#ffffff"], strength: "contender" },
-      { id: "feyenoord", name: "Feyenoord", shortName: "FEY", colors: ["#ff0000", "#ffffff"], strength: "contender" },
-      { id: "az-alkmaar", name: "AZ Alkmaar", shortName: "AZ", colors: ["#e2001a", "#000000"], strength: "challenger" },
-      { id: "twente", name: "FC Twente", shortName: "TWE", colors: ["#d71920", "#ffffff"], strength: "challenger" },
-      { id: "utrecht", name: "FC Utrecht", shortName: "UTR", colors: ["#d71920", "#005ca7"], strength: "solid" },
-      { id: "heerenveen", name: "Heerenveen", shortName: "HEE", colors: ["#0b4ea2", "#ffffff"], strength: "solid" },
-      { id: "vitesse", name: "Vitesse", shortName: "VIT", colors: ["#f6c800", "#000000"], strength: "solid" },
-      { id: "groningen", name: "Groningen", shortName: "GRO", colors: ["#009639", "#ffffff"], strength: "rising" },
-      { id: "nec", name: "NEC Nijmegen", shortName: "NEC", colors: ["#009639", "#e03c31"], strength: "rising" }
+      { id: "ajax", name: "Ajax", shortName: "AJA", colors: ["#ffffff", "#d20a0a"], strength: "contender", mentality: "Positive", marketValue: 360_000_000 },
+      { id: "psv", name: "PSV", shortName: "PSV", colors: ["#ff0000", "#ffffff"], strength: "contender", marketValue: 310_000_000 },
+      { id: "feyenoord", name: "Feyenoord", shortName: "FEY", colors: ["#ff0000", "#ffffff"], strength: "contender", marketValue: 320_000_000 },
+      { id: "az-alkmaar", name: "AZ Alkmaar", shortName: "AZ", colors: ["#e2001a", "#000000"], strength: "challenger", marketValue: 220_000_000 },
+      { id: "twente", name: "FC Twente", shortName: "TWE", colors: ["#d71920", "#ffffff"], strength: "challenger", marketValue: 180_000_000 },
+      { id: "utrecht", name: "FC Utrecht", shortName: "UTR", colors: ["#d71920", "#005ca7"], strength: "solid", marketValue: 120_000_000 },
+      { id: "heerenveen", name: "Heerenveen", shortName: "HEE", colors: ["#0b4ea2", "#ffffff"], strength: "solid", marketValue: 95_000_000 },
+      { id: "vitesse", name: "Vitesse", shortName: "VIT", colors: ["#f6c800", "#000000"], strength: "solid", marketValue: 85_000_000 },
+      { id: "groningen", name: "Groningen", shortName: "GRO", colors: ["#009639", "#ffffff"], strength: "rising", marketValue: 75_000_000 },
+      { id: "nec", name: "NEC Nijmegen", shortName: "NEC", colors: ["#009639", "#e03c31"], strength: "rising", marketValue: 70_000_000 }
     ]
   }),
   createSyntheticLeague({
@@ -339,16 +352,16 @@ const syntheticLeagues: LeagueData[] = [
     level: 2,
     nationCode: "ENG",
     clubs: [
-      { id: "leicester", name: "Leicester City", shortName: "LEI", colors: ["#003090", "#fdb913"], strength: "challenger" },
-      { id: "leeds", name: "Leeds United", shortName: "LEE", colors: ["#fff200", "#1d428a"], strength: "challenger" },
-      { id: "southampton", name: "Southampton", shortName: "SOU", colors: ["#d71920", "#130c0e"], strength: "challenger" },
-      { id: "ipswich", name: "Ipswich Town", shortName: "IPS", colors: ["#003399", "#ffffff"], strength: "solid" },
-      { id: "watford", name: "Watford", shortName: "WAT", colors: ["#fbee23", "#ed2127"], strength: "solid" },
-      { id: "norwich", name: "Norwich", shortName: "NOR", colors: ["#fff200", "#007f3a"], strength: "solid" },
-      { id: "sunderland", name: "Sunderland", shortName: "SUN", colors: ["#ee2737", "#ffffff"], strength: "solid" },
-      { id: "middlesbrough", name: "Middlesbrough", shortName: "MID", colors: ["#da2128", "#ffffff"], strength: "solid" },
-      { id: "coventry", name: "Coventry City", shortName: "COV", colors: ["#8dc1e8", "#000000"], strength: "rising" },
-      { id: "west-brom", name: "West Brom", shortName: "WBA", colors: ["#0d2340", "#ffffff"], strength: "rising" }
+      { id: "leicester", name: "Leicester City", shortName: "LEI", colors: ["#003090", "#fdb913"], strength: "challenger", marketValue: 270_000_000 },
+      { id: "leeds", name: "Leeds United", shortName: "LEE", colors: ["#fff200", "#1d428a"], strength: "challenger", marketValue: 250_000_000 },
+      { id: "southampton", name: "Southampton", shortName: "SOU", colors: ["#d71920", "#130c0e"], strength: "challenger", marketValue: 230_000_000 },
+      { id: "ipswich", name: "Ipswich Town", shortName: "IPS", colors: ["#003399", "#ffffff"], strength: "solid", marketValue: 90_000_000 },
+      { id: "watford", name: "Watford", shortName: "WAT", colors: ["#fbee23", "#ed2127"], strength: "solid", marketValue: 95_000_000 },
+      { id: "norwich", name: "Norwich", shortName: "NOR", colors: ["#fff200", "#007f3a"], strength: "solid", marketValue: 110_000_000 },
+      { id: "sunderland", name: "Sunderland", shortName: "SUN", colors: ["#ee2737", "#ffffff"], strength: "solid", marketValue: 80_000_000 },
+      { id: "middlesbrough", name: "Middlesbrough", shortName: "MID", colors: ["#da2128", "#ffffff"], strength: "solid", marketValue: 85_000_000 },
+      { id: "coventry", name: "Coventry City", shortName: "COV", colors: ["#8dc1e8", "#000000"], strength: "rising", marketValue: 75_000_000 },
+      { id: "west-brom", name: "West Brom", shortName: "WBA", colors: ["#0d2340", "#ffffff"], strength: "rising", marketValue: 78_000_000 }
     ]
   }),
   createSyntheticLeague({
@@ -358,16 +371,16 @@ const syntheticLeagues: LeagueData[] = [
     level: 2,
     nationCode: "ESP",
     clubs: [
-      { id: "leganes", name: "Leganés", shortName: "LEG", colors: ["#ffffff", "#005baa"], strength: "solid" },
-      { id: "espanyol", name: "Espanyol", shortName: "ESP", colors: ["#007ac2", "#ffffff"], strength: "solid" },
-      { id: "elche", name: "Elche", shortName: "ELC", colors: ["#0f7b3e", "#ffffff"], strength: "solid" },
-      { id: "oviedo", name: "Real Oviedo", shortName: "OVI", colors: ["#0055a4", "#ffc400"], strength: "solid" },
-      { id: "zaragoza", name: "Real Zaragoza", shortName: "ZAR", colors: ["#00529f", "#ffffff"], strength: "solid" },
-      { id: "levante", name: "Levante", shortName: "LEV", colors: ["#041c2c", "#9e1b32"], strength: "solid" },
-      { id: "malaga", name: "Málaga", shortName: "MAL", colors: ["#6bb3dd", "#ffffff"], strength: "rising" },
-      { id: "tenerife", name: "Tenerife", shortName: "TEN", colors: ["#1c3f95", "#ffffff"], strength: "rising" },
-      { id: "valladolid", name: "Valladolid", shortName: "VLL", colors: ["#4b0082", "#ffffff"], strength: "rising" },
-      { id: "sporting-gijon", name: "Sporting Gijón", shortName: "SPG", colors: ["#d50032", "#ffffff"], strength: "rising" }
+      { id: "leganes", name: "Leganés", shortName: "LEG", colors: ["#ffffff", "#005baa"], strength: "solid", marketValue: 45_000_000 },
+      { id: "espanyol", name: "Espanyol", shortName: "ESP", colors: ["#007ac2", "#ffffff"], strength: "solid", marketValue: 110_000_000 },
+      { id: "elche", name: "Elche", shortName: "ELC", colors: ["#0f7b3e", "#ffffff"], strength: "solid", marketValue: 60_000_000 },
+      { id: "oviedo", name: "Real Oviedo", shortName: "OVI", colors: ["#0055a4", "#ffc400"], strength: "solid", marketValue: 55_000_000 },
+      { id: "zaragoza", name: "Real Zaragoza", shortName: "ZAR", colors: ["#00529f", "#ffffff"], strength: "solid", marketValue: 58_000_000 },
+      { id: "levante", name: "Levante", shortName: "LEV", colors: ["#041c2c", "#9e1b32"], strength: "solid", marketValue: 65_000_000 },
+      { id: "malaga", name: "Málaga", shortName: "MAL", colors: ["#6bb3dd", "#ffffff"], strength: "rising", marketValue: 40_000_000 },
+      { id: "tenerife", name: "Tenerife", shortName: "TEN", colors: ["#1c3f95", "#ffffff"], strength: "rising", marketValue: 32_000_000 },
+      { id: "valladolid", name: "Valladolid", shortName: "VLL", colors: ["#4b0082", "#ffffff"], strength: "rising", marketValue: 85_000_000 },
+      { id: "sporting-gijon", name: "Sporting Gijón", shortName: "SPG", colors: ["#d50032", "#ffffff"], strength: "rising", marketValue: 45_000_000 }
     ]
   }),
   createSyntheticLeague({
@@ -377,16 +390,16 @@ const syntheticLeagues: LeagueData[] = [
     level: 2,
     nationCode: "ITA",
     clubs: [
-      { id: "parma", name: "Parma", shortName: "PAR", colors: ["#002f87", "#ffdd00"], strength: "solid" },
-      { id: "palermo", name: "Palermo", shortName: "PAL", colors: ["#f5a8b8", "#000000"], strength: "solid" },
-      { id: "cagliari", name: "Cagliari", shortName: "CAG", colors: ["#003366", "#a50034"], strength: "solid" },
-      { id: "brescia", name: "Brescia", shortName: "BRE", colors: ["#0054a6", "#ffffff"], strength: "solid" },
-      { id: "como", name: "Como", shortName: "COM", colors: ["#003399", "#ffffff"], strength: "solid" },
-      { id: "pisa", name: "Pisa", shortName: "PIS", colors: ["#000000", "#0076bf"], strength: "rising" },
-      { id: "frosinone", name: "Frosinone", shortName: "FRO", colors: ["#004aad", "#ffda44"], strength: "rising" },
-      { id: "spezia", name: "Spezia", shortName: "SPE", colors: ["#000000", "#ffffff"], strength: "rising" },
-      { id: "reggina", name: "Reggina", shortName: "REG", colors: ["#800000", "#ffffff"], strength: "rising" },
-      { id: "lecce", name: "Lecce", shortName: "LEC", colors: ["#004aad", "#ffdd00"], strength: "rising" }
+      { id: "parma", name: "Parma", shortName: "PAR", colors: ["#002f87", "#ffdd00"], strength: "solid", marketValue: 65_000_000 },
+      { id: "palermo", name: "Palermo", shortName: "PAL", colors: ["#f5a8b8", "#000000"], strength: "solid", marketValue: 52_000_000 },
+      { id: "cagliari", name: "Cagliari", shortName: "CAG", colors: ["#003366", "#a50034"], strength: "solid", marketValue: 95_000_000 },
+      { id: "brescia", name: "Brescia", shortName: "BRE", colors: ["#0054a6", "#ffffff"], strength: "solid", marketValue: 45_000_000 },
+      { id: "como", name: "Como", shortName: "COM", colors: ["#003399", "#ffffff"], strength: "solid", marketValue: 60_000_000 },
+      { id: "pisa", name: "Pisa", shortName: "PIS", colors: ["#000000", "#0076bf"], strength: "rising", marketValue: 38_000_000 },
+      { id: "frosinone", name: "Frosinone", shortName: "FRO", colors: ["#004aad", "#ffda44"], strength: "rising", marketValue: 70_000_000 },
+      { id: "spezia", name: "Spezia", shortName: "SPE", colors: ["#000000", "#ffffff"], strength: "rising", marketValue: 75_000_000 },
+      { id: "reggina", name: "Reggina", shortName: "REG", colors: ["#800000", "#ffffff"], strength: "rising", marketValue: 35_000_000 },
+      { id: "lecce", name: "Lecce", shortName: "LEC", colors: ["#004aad", "#ffdd00"], strength: "rising", marketValue: 90_000_000 }
     ]
   }),
   createSyntheticLeague({
@@ -396,16 +409,16 @@ const syntheticLeagues: LeagueData[] = [
     level: 2,
     nationCode: "GER",
     clubs: [
-      { id: "hamburg", name: "Hamburg", shortName: "HSV", colors: ["#005ca9", "#ffffff"], strength: "solid" },
-      { id: "schalke", name: "Schalke", shortName: "S04", colors: ["#0d47a1", "#ffffff"], strength: "solid" },
-      { id: "hertha", name: "Hertha BSC", shortName: "BSC", colors: ["#0041ab", "#ffffff"], strength: "solid" },
-      { id: "st-pauli", name: "St. Pauli", shortName: "STP", colors: ["#4b3621", "#ffffff"], strength: "solid" },
-      { id: "dusseldorf", name: "Fortuna Düsseldorf", shortName: "F95", colors: ["#d11241", "#ffffff"], strength: "solid" },
-      { id: "hannover", name: "Hannover 96", shortName: "H96", colors: ["#006633", "#000000"], strength: "solid" },
-      { id: "nurnberg", name: "Nürnberg", shortName: "FCN", colors: ["#800000", "#ffffff"], strength: "solid" },
-      { id: "paderborn", name: "Paderborn", shortName: "SCP", colors: ["#003399", "#ffffff"], strength: "rising" },
-      { id: "karlsruhe", name: "Karlsruhe", shortName: "KSC", colors: ["#0054a6", "#ffffff"], strength: "rising" },
-      { id: "holstein-kiel", name: "Holstein Kiel", shortName: "KIE", colors: ["#005ca9", "#ff0000"], strength: "rising" }
+      { id: "hamburg", name: "Hamburg", shortName: "HSV", colors: ["#005ca9", "#ffffff"], strength: "solid", marketValue: 70_000_000 },
+      { id: "schalke", name: "Schalke", shortName: "S04", colors: ["#0d47a1", "#ffffff"], strength: "solid", marketValue: 80_000_000 },
+      { id: "hertha", name: "Hertha BSC", shortName: "BSC", colors: ["#0041ab", "#ffffff"], strength: "solid", marketValue: 85_000_000 },
+      { id: "st-pauli", name: "St. Pauli", shortName: "STP", colors: ["#4b3621", "#ffffff"], strength: "solid", marketValue: 60_000_000 },
+      { id: "dusseldorf", name: "Fortuna Düsseldorf", shortName: "F95", colors: ["#d11241", "#ffffff"], strength: "solid", marketValue: 55_000_000 },
+      { id: "hannover", name: "Hannover 96", shortName: "H96", colors: ["#006633", "#000000"], strength: "solid", marketValue: 50_000_000 },
+      { id: "nurnberg", name: "Nürnberg", shortName: "FCN", colors: ["#800000", "#ffffff"], strength: "solid", marketValue: 45_000_000 },
+      { id: "paderborn", name: "Paderborn", shortName: "SCP", colors: ["#003399", "#ffffff"], strength: "rising", marketValue: 45_000_000 },
+      { id: "karlsruhe", name: "Karlsruhe", shortName: "KSC", colors: ["#0054a6", "#ffffff"], strength: "rising", marketValue: 38_000_000 },
+      { id: "holstein-kiel", name: "Holstein Kiel", shortName: "KIE", colors: ["#005ca9", "#ff0000"], strength: "rising", marketValue: 40_000_000 }
     ]
   }),
   createSyntheticLeague({
@@ -415,16 +428,16 @@ const syntheticLeagues: LeagueData[] = [
     level: 2,
     nationCode: "FRA",
     clubs: [
-      { id: "auxerre", name: "Auxerre", shortName: "AJA", colors: ["#0f5bb3", "#ffffff"], strength: "solid" },
-      { id: "saint-etienne", name: "Saint-Étienne", shortName: "ASSE", colors: ["#00a55c", "#ffffff"], strength: "solid" },
-      { id: "angers", name: "Angers SCO", shortName: "ANG", colors: ["#000000", "#ffffff"], strength: "solid" },
-      { id: "caen", name: "Caen", shortName: "CAE", colors: ["#003087", "#e4002b"], strength: "solid" },
-      { id: "guingamp", name: "Guingamp", shortName: "GUI", colors: ["#d40000", "#000000"], strength: "solid" },
-      { id: "bastia", name: "Bastia", shortName: "BAS", colors: ["#0033a0", "#ffffff"], strength: "solid" },
-      { id: "dijon", name: "Dijon", shortName: "DIJ", colors: ["#d50032", "#ffffff"], strength: "rising" },
-      { id: "sochaux", name: "Sochaux", shortName: "SOC", colors: ["#f9d616", "#003a70"], strength: "rising" },
-      { id: "grenoble", name: "Grenoble", shortName: "GRE", colors: ["#00539f", "#ffffff"], strength: "rising" },
-      { id: "amiens", name: "Amiens", shortName: "AMI", colors: ["#6c757d", "#ffffff"], strength: "rising" }
+      { id: "auxerre", name: "Auxerre", shortName: "AJA", colors: ["#0f5bb3", "#ffffff"], strength: "solid", marketValue: 35_000_000 },
+      { id: "saint-etienne", name: "Saint-Étienne", shortName: "ASSE", colors: ["#00a55c", "#ffffff"], strength: "solid", marketValue: 50_000_000 },
+      { id: "angers", name: "Angers SCO", shortName: "ANG", colors: ["#000000", "#ffffff"], strength: "solid", marketValue: 40_000_000 },
+      { id: "caen", name: "Caen", shortName: "CAE", colors: ["#003087", "#e4002b"], strength: "solid", marketValue: 25_000_000 },
+      { id: "guingamp", name: "Guingamp", shortName: "GUI", colors: ["#d40000", "#000000"], strength: "solid", marketValue: 24_000_000 },
+      { id: "bastia", name: "Bastia", shortName: "BAS", colors: ["#0033a0", "#ffffff"], strength: "solid", marketValue: 22_000_000 },
+      { id: "dijon", name: "Dijon", shortName: "DIJ", colors: ["#d50032", "#ffffff"], strength: "rising", marketValue: 20_000_000 },
+      { id: "sochaux", name: "Sochaux", shortName: "SOC", colors: ["#f9d616", "#003a70"], strength: "rising", marketValue: 23_000_000 },
+      { id: "grenoble", name: "Grenoble", shortName: "GRE", colors: ["#00539f", "#ffffff"], strength: "rising", marketValue: 18_000_000 },
+      { id: "amiens", name: "Amiens", shortName: "AMI", colors: ["#6c757d", "#ffffff"], strength: "rising", marketValue: 30_000_000 }
     ]
   }),
   createSyntheticLeague({
@@ -434,16 +447,16 @@ const syntheticLeagues: LeagueData[] = [
     level: 2,
     nationCode: "NED",
     clubs: [
-      { id: "zwolle", name: "PEC Zwolle", shortName: "ZWO", colors: ["#007bc7", "#ffffff"], strength: "solid" },
-      { id: "willem-ii", name: "Willem II", shortName: "WII", colors: ["#a50034", "#132257"], strength: "solid" },
-      { id: "nac-breda", name: "NAC Breda", shortName: "NAC", colors: ["#ffcc00", "#000000"], strength: "solid" },
-      { id: "de-graafschap", name: "De Graafschap", shortName: "GRA", colors: ["#0b4ea2", "#ffffff"], strength: "solid" },
-      { id: "roda-jc", name: "Roda JC", shortName: "RJC", colors: ["#ffcd00", "#000000"], strength: "solid" },
-      { id: "den-haag", name: "ADO Den Haag", shortName: "ADO", colors: ["#007f3b", "#ffdd00"], strength: "rising" },
-      { id: "almere-city", name: "Almere City", shortName: "ALM", colors: ["#e32219", "#ffffff"], strength: "rising" },
-      { id: "excelsior", name: "Excelsior", shortName: "EXC", colors: ["#000000", "#ffffff"], strength: "rising" },
-      { id: "top-oss", name: "TOP Oss", shortName: "OSS", colors: ["#d50032", "#ffffff"], strength: "developing" },
-      { id: "telstar", name: "Telstar", shortName: "TEL", colors: ["#ffffff", "#f9a602"], strength: "developing" }
+      { id: "zwolle", name: "PEC Zwolle", shortName: "ZWO", colors: ["#007bc7", "#ffffff"], strength: "solid", marketValue: 25_000_000 },
+      { id: "willem-ii", name: "Willem II", shortName: "WII", colors: ["#a50034", "#132257"], strength: "solid", marketValue: 22_000_000 },
+      { id: "nac-breda", name: "NAC Breda", shortName: "NAC", colors: ["#ffcc00", "#000000"], strength: "solid", marketValue: 20_000_000 },
+      { id: "de-graafschap", name: "De Graafschap", shortName: "GRA", colors: ["#0b4ea2", "#ffffff"], strength: "solid", marketValue: 15_000_000 },
+      { id: "roda-jc", name: "Roda JC", shortName: "RJC", colors: ["#ffcd00", "#000000"], strength: "solid", marketValue: 14_000_000 },
+      { id: "den-haag", name: "ADO Den Haag", shortName: "ADO", colors: ["#007f3b", "#ffdd00"], strength: "rising", marketValue: 18_000_000 },
+      { id: "almere-city", name: "Almere City", shortName: "ALM", colors: ["#e32219", "#ffffff"], strength: "rising", marketValue: 16_000_000 },
+      { id: "excelsior", name: "Excelsior", shortName: "EXC", colors: ["#000000", "#ffffff"], strength: "rising", marketValue: 17_000_000 },
+      { id: "top-oss", name: "TOP Oss", shortName: "OSS", colors: ["#d50032", "#ffffff"], strength: "developing", marketValue: 8_000_000 },
+      { id: "telstar", name: "Telstar", shortName: "TEL", colors: ["#ffffff", "#f9a602"], strength: "developing", marketValue: 7_000_000 }
     ]
   }),
   // Third tiers for the top three countries

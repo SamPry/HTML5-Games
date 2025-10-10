@@ -24,6 +24,7 @@ export interface ClubTemplate {
   tempo: number;
   press: number;
   rep: number;
+  marketValue?: number;
   transferBudget: number;
   wageBudget: number;
   players: PlayerTemplate[];
@@ -53,6 +54,7 @@ export const premierLeagueData: LeagueData = {
       tempo: 68,
       press: 70,
       rep: 8600,
+      marketValue: 1_010_000_000,
       transferBudget: 70000000,
       wageBudget: 2200000,
       players: [
@@ -83,6 +85,7 @@ export const premierLeagueData: LeagueData = {
       tempo: 64,
       press: 72,
       rep: 9300,
+      marketValue: 1_200_000_000,
       transferBudget: 90000000,
       wageBudget: 2600000,
       players: [
@@ -113,6 +116,7 @@ export const premierLeagueData: LeagueData = {
       tempo: 70,
       press: 74,
       rep: 9000,
+      marketValue: 960_000_000,
       transferBudget: 65000000,
       wageBudget: 2300000,
       players: [
@@ -143,6 +147,7 @@ export const premierLeagueData: LeagueData = {
       tempo: 66,
       press: 68,
       rep: 9100,
+      marketValue: 870_000_000,
       transferBudget: 75000000,
       wageBudget: 2500000,
       players: [
@@ -173,6 +178,7 @@ export const premierLeagueData: LeagueData = {
       tempo: 64,
       press: 70,
       rep: 8800,
+      marketValue: 860_000_000,
       transferBudget: 80000000,
       wageBudget: 2400000,
       players: [
@@ -203,6 +209,7 @@ export const premierLeagueData: LeagueData = {
       tempo: 68,
       press: 72,
       rep: 8700,
+      marketValue: 780_000_000,
       transferBudget: 60000000,
       wageBudget: 2100000,
       players: [
@@ -233,6 +240,7 @@ export const premierLeagueData: LeagueData = {
       tempo: 66,
       press: 70,
       rep: 8400,
+      marketValue: 720_000_000,
       transferBudget: 55000000,
       wageBudget: 2000000,
       players: [
@@ -263,6 +271,7 @@ export const premierLeagueData: LeagueData = {
       tempo: 64,
       press: 66,
       rep: 8200,
+      marketValue: 620_000_000,
       transferBudget: 45000000,
       wageBudget: 1700000,
       players: [
@@ -293,6 +302,7 @@ export const premierLeagueData: LeagueData = {
       tempo: 68,
       press: 70,
       rep: 7800,
+      marketValue: 520_000_000,
       transferBudget: 42000000,
       wageBudget: 1600000,
       players: [
@@ -323,6 +333,7 @@ export const premierLeagueData: LeagueData = {
       tempo: 62,
       press: 64,
       rep: 7800,
+      marketValue: 480_000_000,
       transferBudget: 38000000,
       wageBudget: 1500000,
       players: [

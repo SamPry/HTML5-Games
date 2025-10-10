@@ -6,7 +6,7 @@ import type { Fixture, Match } from "@domain/match/types";
 import type { TransferHistoryEntry, TransferListing } from "@domain/transfer/types";
 import { buildSchedule } from "@engine/sim/schedule";
 import { simulateMatch } from "@engine/sim/simpleMatch";
-import { leaguePacks } from "@data/leagues";
+import { leaguePacks, createSyntheticSquad } from "@data/leagues";
 import type { ClubTemplate, PlayerTemplate } from "@data/premierLeague";
 import { nanoid } from "nanoid";
 
@@ -53,6 +53,24 @@ export interface TransferBidPayload {
 
 export interface ManualSimulationPayload {
   fixtureId: ID;
+}
+
+export interface CustomClubInput {
+  leagueId: ID;
+  name: string;
+  shortName: string;
+  primaryColor: string;
+  secondaryColor: string;
+  mentality: "Balanced" | "Positive" | "Cautious";
+  formation: string;
+  profile: "academy" | "challenger" | "elite";
+  nationality?: string;
+}
+
+export interface CustomClubResult {
+  success: boolean;
+  clubId?: ID;
+  message: string;
 }
 
 const START_SEASON = 2024;
@@ -214,6 +232,111 @@ export function makeTransferBid(world: World, payload: TransferBidPayload): stri
   return `${player.name} agrees to join ${buyingClub.name}.`;
 }
 
+const customProfiles: Record<CustomClubInput["profile"], { baseAbility: number; tempo: number; press: number }> = {
+  academy: { baseAbility: 134, tempo: 59, press: 60 },
+  challenger: { baseAbility: 144, tempo: 62, press: 64 },
+  elite: { baseAbility: 152, tempo: 64, press: 66 }
+};
+
+const nationCodeLookup: Record<string, string> = {
+  England: "ENG",
+  Spain: "ESP",
+  Italy: "ITA",
+  Germany: "GER",
+  France: "FRA",
+  Netherlands: "NED",
+  Portugal: "PRT",
+  Brazil: "BRA",
+  Japan: "JPN",
+  USA: "USA"
+};
+
+export function createCustomClub(world: World, input: CustomClubInput): CustomClubResult {
+  const league = world.leagues.find((entry) => entry.id === input.leagueId);
+  if (!league) {
+    return { success: false, message: "Selected league does not exist." };
+  }
+
+  const trimmedName = input.name.trim();
+  if (trimmedName.length < 3) {
+    return { success: false, message: "Club name must be at least three characters." };
+  }
+
+  const trimmedShort = input.shortName.trim().toUpperCase();
+  if (trimmedShort.length < 2 || trimmedShort.length > 5) {
+    return { success: false, message: "Short name must be 2-5 characters." };
+  }
+
+  if (world.clubs.some((club) => club.name.toLowerCase() === trimmedName.toLowerCase())) {
+    return { success: false, message: "A club with that name already exists." };
+  }
+
+  if (world.clubs.some((club) => club.shortName.toUpperCase() === trimmedShort)) {
+    return { success: false, message: "Short name is already in use." };
+  }
+
+  const profile = customProfiles[input.profile] ?? customProfiles.academy;
+
+  const baseId = slugify(trimmedName) || `custom-${world.clubs.length + 1}`;
+  let clubId = baseId;
+  let suffix = 1;
+  while (world.clubs.some((club) => club.id === clubId)) {
+    clubId = `${baseId}-${suffix}`;
+    suffix += 1;
+  }
+
+  const nationality = input.nationality ?? nationCodeLookup[league.nation] ?? "ENG";
+  const playersTemplate = createSyntheticSquad(clubId, nationality, profile.baseAbility);
+  const estimatedValue = playersTemplate.reduce((total, player) => total + player.value, 0);
+  const transferBudget = Math.round(Math.max(20_000_000, estimatedValue * 0.09));
+  const wageBudget = Math.round(Math.max(450_000, estimatedValue * 0.0025));
+  const rep = Math.round(Math.min(9200, 6900 + Math.log10(estimatedValue / 1_000_000) * 520));
+
+  const clubTemplate: ClubTemplate = {
+    id: clubId,
+    name: trimmedName,
+    shortName: trimmedShort,
+    colors: [input.primaryColor, input.secondaryColor],
+    formation: input.formation,
+    mentality: input.mentality,
+    tempo: profile.tempo,
+    press: profile.press,
+    rep,
+    marketValue: estimatedValue,
+    transferBudget,
+    wageBudget,
+    players: playersTemplate
+  };
+
+  const club = createClubFromTemplate(clubTemplate, league.id);
+  const rngSeed = deriveSeed(world.seed, world.players.length + world.clubs.length + 17);
+  const rng = createRNG(rngSeed);
+  const players = createPlayersFromTemplate(clubTemplate, club, world.date, rng);
+
+  club.roster.push(...players.map((player) => player.id));
+  club.wageCommitment = players.reduce((total, player) => total + player.wage, 0);
+
+  world.clubs.push(club);
+  world.players.push(...players);
+
+  const leagueEntry = world.leagues.find((entry) => entry.id === league.id);
+  if (leagueEntry) {
+    leagueEntry.clubIds = [...leagueEntry.clubIds, club.id];
+  }
+
+  world.fixtures = world.fixtures.filter((fixture) => fixture.competitionId !== league.id);
+  const leagueClubs = world.clubs.filter((entry) => entry.leagueId === league.id);
+  world.fixtures.push(...buildSchedule(leagueClubs, league.id, world.date));
+  world.standings[league.id] = computeStandingsForLeague(world, league.id);
+  world.inbox.unshift(`${club.name} has been founded and joins ${league.name}.`);
+
+  return {
+    success: true,
+    clubId: club.id,
+    message: `${club.name} is ready for its inaugural season in ${league.name}.`
+  };
+}
+
 export function upcomingFixtures(world: World, clubId: ID | null): Fixture[] {
   if (!clubId) return [];
   return world.fixtures
@@ -235,6 +358,7 @@ function finalizeMatch(world: World, match: Match): void {
 }
 
 function createClubFromTemplate(template: ClubTemplate, leagueId: ID): Club {
+  const marketValue = template.marketValue ?? estimateMarketValue(template);
   return {
     id: template.id,
     name: template.name,
@@ -249,10 +373,18 @@ function createClubFromTemplate(template: ClubTemplate, leagueId: ID): Club {
       press: template.press
     },
     rep: template.rep,
+    marketValue,
     transferBudget: template.transferBudget,
     wageBudget: template.wageBudget,
     wageCommitment: 0
   };
+}
+
+function estimateMarketValue(template: ClubTemplate): number {
+  if (template.players.length) {
+    return template.players.reduce((total, player) => total + player.value, 0);
+  }
+  return 120_000_000;
 }
 
 function createPlayersFromTemplate(
@@ -444,6 +576,14 @@ function computeStandingsForLeague(world: World, leagueId: ID): StandingsRow[] {
     if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
     return clubs.findIndex((club) => club.id === a.clubId) - clubs.findIndex((club) => club.id === b.clubId);
   });
+}
+
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
 }
 
 export function standingsForLeague(world: World, leagueId: ID | null): StandingsRow[] {

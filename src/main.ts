@@ -1,5 +1,5 @@
 import { GameStore, randomSeed } from "@app/store";
-import { dateLabel, type World } from "@app/world";
+import { dateLabel, type World, type CustomClubInput, type CustomClubResult } from "@app/world";
 import type { ID } from "@core/types";
 import { drawPitch } from "@ui/components/pitch";
 import { renderDashboard } from "@ui/screens/dashboard";
@@ -304,6 +304,69 @@ function createTeamSelectionModal() {
   const clubGrid = document.createElement("div");
   clubGrid.className = "club-grid";
 
+  const customPanel = document.createElement("div");
+  customPanel.className = "custom-club-panel hidden";
+  customPanel.innerHTML = `
+    <form class="custom-club-form">
+      <div class="section-heading">
+        <span class="eyebrow">Founder mode</span>
+        <h3>Create your own club</h3>
+      </div>
+      <p class="muted-text">Craft a new identity, choose a league, and we'll assemble a squad to match your ambition.</p>
+      <label class="field">
+        <span>Club name</span>
+        <input name="name" type="text" maxlength="40" required placeholder="Newcastle Bluebirds" />
+      </label>
+      <label class="field-inline">
+        <span>Short name</span>
+        <input name="short" type="text" maxlength="5" required placeholder="NWB" />
+      </label>
+      <label class="field">
+        <span>League</span>
+        <select name="league" required></select>
+      </label>
+      <div class="field colors">
+        <label>
+          <span>Primary</span>
+          <input name="primary" type="color" value="#113399" />
+        </label>
+        <label>
+          <span>Secondary</span>
+          <input name="secondary" type="color" value="#f5f5f5" />
+        </label>
+      </div>
+      <label class="field">
+        <span>Mentality</span>
+        <select name="mentality">
+          <option value="Balanced">Balanced</option>
+          <option value="Positive" selected>Positive</option>
+          <option value="Cautious">Cautious</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Formation</span>
+        <select name="formation">
+          <option value="4-3-3">4-3-3</option>
+          <option value="4-2-3-1">4-2-3-1</option>
+          <option value="3-4-3">3-4-3</option>
+          <option value="4-4-2">4-4-2</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Ambition</span>
+        <select name="profile">
+          <option value="academy">Academy project – build for the future</option>
+          <option value="challenger" selected>Challenger – compete immediately</option>
+          <option value="elite">Elite – chase silverware</option>
+        </select>
+      </label>
+      <div class="modal-footer">
+        <button type="button" class="ghost" data-action="cancel">Back</button>
+        <button type="submit" class="primary">Create club</button>
+      </div>
+    </form>
+  `;
+
   const footer = document.createElement("div");
   footer.className = "modal-footer";
 
@@ -314,12 +377,15 @@ function createTeamSelectionModal() {
   confirmButton.disabled = true;
 
   footer.append(confirmButton);
-  modal.append(header, intro, leagueList, clubGrid, footer);
+  modal.append(header, intro, leagueList, clubGrid, footer, customPanel);
   overlay.append(modal);
   document.body.appendChild(overlay);
 
   let selectedLeagueId: ID | null = null;
   let selectedClubId: ID | null = null;
+  const customForm = customPanel.querySelector("form") as HTMLFormElement;
+  const customLeagueSelect = customForm.querySelector("select[name=\"league\"]") as HTMLSelectElement;
+  const cancelCustomButton = customForm.querySelector("button[data-action=\"cancel\"]") as HTMLButtonElement;
 
   function renderLeagueButtons(): void {
     const world = store.snapshot;
@@ -343,6 +409,7 @@ function createTeamSelectionModal() {
       });
       leagueList.append(button);
     });
+    populateCustomLeagueOptions(sortedLeagues);
   }
 
   function renderClubCards(): void {
@@ -372,7 +439,7 @@ function createTeamSelectionModal() {
         </div>
         <div class="club-meta">
           <span>Rep ${club.rep}</span>
-          <span>£${formatBudget(club.transferBudget)} transfer</span>
+          <span>£${formatBudget(club.marketValue)} value</span>
           <span>£${formatBudget(club.wageBudget)}/wk wages</span>
         </div>
       `;
@@ -385,6 +452,25 @@ function createTeamSelectionModal() {
       });
       clubGrid.append(card);
     });
+
+    const createCard = document.createElement("button");
+    createCard.type = "button";
+    createCard.className = "club-card create";
+    createCard.innerHTML = `
+      <div class="club-card-header">
+        <span class="badge info">Custom</span>
+        <strong>Create your own club</strong>
+      </div>
+      <div class="club-meta">
+        <span>Design colours & crest</span>
+        <span>Pick any league</span>
+        <span>Tailor ambition</span>
+      </div>
+    `;
+    createCard.addEventListener("click", () => {
+      openCustomForm();
+    });
+    clubGrid.append(createCard);
   }
 
   confirmButton.addEventListener("click", () => {
@@ -401,6 +487,42 @@ function createTeamSelectionModal() {
     bootstrapSeason();
   });
 
+  customForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const data = new FormData(customForm);
+    const leagueId = (data.get("league") as string) || selectedLeagueId;
+    if (!leagueId) {
+      notify("Choose a league for your new club.");
+      return;
+    }
+    const payload = {
+      leagueId,
+      name: String(data.get("name") || "").trim(),
+      shortName: String(data.get("short") || "").trim(),
+      primaryColor: String(data.get("primary") || "#113399"),
+      secondaryColor: String(data.get("secondary") || "#f5f5f5"),
+      mentality: data.get("mentality") as "Balanced" | "Positive" | "Cautious",
+      formation: String(data.get("formation") || "4-3-3"),
+      profile: (data.get("profile") as "academy" | "challenger" | "elite") ?? "academy"
+    } satisfies CustomClubInput;
+
+    const result = store.dispatch({ type: "CREATE_CUSTOM_CLUB", payload }) as CustomClubResult;
+    if (!result.success || !result.clubId) {
+      notify(result.message);
+      return;
+    }
+    store.dispatch({ type: "SET_USER_CLUB", payload: { clubId: result.clubId } });
+    standingsLeagueId = store.snapshot.userLeagueId ?? standingsLeagueId;
+    notify(result.message);
+    closeCustomForm();
+    close();
+    bootstrapSeason();
+  });
+
+  cancelCustomButton.addEventListener("click", () => {
+    closeCustomForm();
+  });
+
   function open(): void {
     const world = store.snapshot;
     selectedClubId = world.userClubId;
@@ -409,11 +531,50 @@ function createTeamSelectionModal() {
     renderLeagueButtons();
     renderClubCards();
     confirmButton.disabled = !selectedClubId;
+    closeCustomForm();
     overlay.classList.remove("hidden");
   }
 
   function close(): void {
     overlay.classList.add("hidden");
+  }
+
+  function openCustomForm(): void {
+    modal.classList.add("custom-mode");
+    customPanel.classList.remove("hidden");
+    leagueList.classList.add("hidden");
+    clubGrid.classList.add("hidden");
+    footer.classList.add("hidden");
+    if (selectedLeagueId) {
+      customLeagueSelect.value = selectedLeagueId;
+    }
+    customForm.querySelector<HTMLInputElement>("input[name=\"name\"]")?.focus();
+  }
+
+  function closeCustomForm(): void {
+    modal.classList.remove("custom-mode");
+    customPanel.classList.add("hidden");
+    leagueList.classList.remove("hidden");
+    clubGrid.classList.remove("hidden");
+    footer.classList.remove("hidden");
+    customForm.reset();
+    populateCustomLeagueOptions([...store.snapshot.leagues]);
+  }
+
+  function populateCustomLeagueOptions(leagues: World["leagues"]): void {
+    customLeagueSelect.innerHTML = "";
+    leagues
+      .slice()
+      .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name))
+      .forEach((league) => {
+        const option = document.createElement("option");
+        option.value = league.id;
+        option.textContent = `${league.name} (L${league.level})`;
+        customLeagueSelect.append(option);
+      });
+    if (selectedLeagueId) {
+      customLeagueSelect.value = selectedLeagueId;
+    }
   }
 
   return { open, close };

@@ -7,9 +7,12 @@ import {
   makeTransferBid,
   simulateDay,
   simulateFixture,
+  createCustomClub,
   type DailyTickSummary,
   type ManualSimulationPayload,
   type TransferBidPayload,
+  type CustomClubInput,
+  type CustomClubResult,
   type World
 } from "@app/world";
 import type { ID, RNGSeed } from "@core/types";
@@ -19,6 +22,7 @@ export type WorldCommand =
   | { type: "ADVANCE_DAYS"; payload: { days?: number } }
   | { type: "SIMULATE_FIXTURE"; payload: ManualSimulationPayload }
   | { type: "MAKE_TRANSFER_BID"; payload: TransferBidPayload }
+  | { type: "CREATE_CUSTOM_CLUB"; payload: CustomClubInput }
   | { type: "SET_USER_CLUB"; payload: { clubId: ID } };
 
 interface GameState {
@@ -28,6 +32,7 @@ interface GameState {
   advanceDays: (days: number) => DailyTickSummary;
   runFixture: (payload: ManualSimulationPayload) => MatchResult;
   placeBid: (payload: TransferBidPayload) => string;
+  buildCustomClub: (payload: CustomClubInput) => CustomClubResult;
   setUserClub: (clubId: ID) => void;
 }
 
@@ -84,6 +89,16 @@ function createGameState(seed: RNGSeed): StoreApi<GameState> {
         });
         return message;
       },
+      buildCustomClub: (payload: CustomClubInput) => {
+        const result = createCustomClub(get().world, payload);
+        set((state) => {
+          state.lastSummary = {
+            matches: [],
+            messages: [result.message]
+          };
+        });
+        return result;
+      },
       setUserClub: (clubId: ID) => {
         set((state) => {
           state.world.userClubId = clubId;
@@ -109,7 +124,7 @@ export class GameStore {
     return this.store.getState().world;
   }
 
-  dispatch(command: WorldCommand): DailyTickSummary | MatchResult | string | null {
+  dispatch(command: WorldCommand): DailyTickSummary | MatchResult | CustomClubResult | string | null {
     const state = this.store.getState();
     switch (command.type) {
       case "ADVANCE_DAY": {
@@ -132,6 +147,11 @@ export class GameStore {
         const message = state.placeBid(command.payload);
         this.notify();
         return message;
+      }
+      case "CREATE_CUSTOM_CLUB": {
+        const result = state.buildCustomClub(command.payload);
+        this.notify();
+        return result;
       }
       case "SET_USER_CLUB": {
         state.setUserClub(command.payload.clubId);
