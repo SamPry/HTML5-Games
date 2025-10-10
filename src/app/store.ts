@@ -1,3 +1,5 @@
+/// <reference path="../types/zustand.d.ts" />
+
 import { immer } from "zustand/middleware/immer";
 import { createStore, type StoreApi } from "zustand/vanilla";
 
@@ -122,6 +124,10 @@ export class GameStore {
 
   get snapshot(): World {
     return this.store.getState().world;
+  }
+
+  get summary(): DailyTickSummary | null {
+    return this.store.getState().lastSummary;
   }
 
   dispatch(command: WorldCommand): DailyTickSummary | MatchResult | CustomClubResult | string | null {

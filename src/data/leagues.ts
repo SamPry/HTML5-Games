@@ -275,16 +275,87 @@ const syntheticLeagues: LeagueData[] = [
     level: 1,
     nationCode: "PRT",
     clubs: [
-      { id: "benfica", name: "Benfica", shortName: "BEN", colors: ["#ff0000", "#ffffff"], strength: "contender", mentality: "Positive" },
-      { id: "porto", name: "FC Porto", shortName: "FCP", colors: ["#0033a0", "#ffffff"], strength: "contender" },
-      { id: "sporting", name: "Sporting CP", shortName: "SCP", colors: ["#00874b", "#ffffff"], strength: "contender" },
-      { id: "braga", name: "SC Braga", shortName: "BRA", colors: ["#c4171d", "#ffffff"], strength: "challenger" },
-      { id: "guimaraes", name: "Vitória SC", shortName: "GUI", colors: ["#ffffff", "#000000"], strength: "challenger" },
-      { id: "boavista", name: "Boavista", shortName: "BOA", colors: ["#000000", "#ffffff"], strength: "solid" },
-      { id: "rio-ave", name: "Rio Ave", shortName: "RIO", colors: ["#009639", "#ff8200"], strength: "solid" },
-      { id: "famalicao", name: "Famalicão", shortName: "FAM", colors: ["#003a70", "#fdda24"], strength: "solid" },
-      { id: "estoril", name: "Estoril", shortName: "EST", colors: ["#fdda24", "#0033a0"], strength: "rising" },
-      { id: "gil-vicente", name: "Gil Vicente", shortName: "GIL", colors: ["#e00034", "#001489"], strength: "rising" }
+      {
+        id: "benfica",
+        name: "Benfica",
+        shortName: "BEN",
+        colors: ["#ff0000", "#ffffff"],
+        strength: "contender",
+        mentality: "Positive",
+        marketValue: 370_000_000
+      },
+      {
+        id: "porto",
+        name: "FC Porto",
+        shortName: "FCP",
+        colors: ["#0033a0", "#ffffff"],
+        strength: "contender",
+        marketValue: 350_000_000
+      },
+      {
+        id: "sporting",
+        name: "Sporting CP",
+        shortName: "SCP",
+        colors: ["#00874b", "#ffffff"],
+        strength: "contender",
+        marketValue: 360_000_000
+      },
+      {
+        id: "braga",
+        name: "SC Braga",
+        shortName: "BRA",
+        colors: ["#c4171d", "#ffffff"],
+        strength: "challenger",
+        marketValue: 210_000_000
+      },
+      {
+        id: "guimaraes",
+        name: "Vitória SC",
+        shortName: "GUI",
+        colors: ["#ffffff", "#000000"],
+        strength: "challenger",
+        marketValue: 120_000_000
+      },
+      {
+        id: "boavista",
+        name: "Boavista",
+        shortName: "BOA",
+        colors: ["#000000", "#ffffff"],
+        strength: "solid",
+        marketValue: 55_000_000
+      },
+      {
+        id: "rio-ave",
+        name: "Rio Ave",
+        shortName: "RIO",
+        colors: ["#009639", "#ff8200"],
+        strength: "solid",
+        marketValue: 40_000_000
+      },
+      {
+        id: "famalicao",
+        name: "Famalicão",
+        shortName: "FAM",
+        colors: ["#003a70", "#fdda24"],
+        strength: "solid",
+        marketValue: 45_000_000
+      },
+      {
+        id: "estoril",
+        name: "Estoril",
+        shortName: "EST",
+        colors: ["#fdda24", "#0033a0"],
+        strength: "rising",
+        marketValue: 35_000_000
+      },
+      {
+        id: "gil-vicente",
+        name: "Gil Vicente",
+        shortName: "GIL",
+        colors: ["#e00034", "#001489"],
+        strength: "rising",
+        marketValue: 32_000_000
+      }
     ]
   }),
   createSyntheticLeague({
@@ -294,16 +365,87 @@ const syntheticLeagues: LeagueData[] = [
     level: 1,
     nationCode: "USA",
     clubs: [
-      { id: "la-galaxy", name: "LA Galaxy", shortName: "LAG", colors: ["#00245d", "#ffd200"], strength: "solid", mentality: "Positive" },
-      { id: "la-fc", name: "LAFC", shortName: "LAFC", colors: ["#000000", "#c59d5f"], strength: "solid" },
-      { id: "seattle", name: "Seattle Sounders", shortName: "SEA", colors: ["#2c68b1", "#66b32e"], strength: "solid" },
-      { id: "atlanta", name: "Atlanta United", shortName: "ATL", colors: ["#a4000f", "#000000"], strength: "solid" },
-      { id: "nycfc", name: "NYCFC", shortName: "NYC", colors: ["#6cadde", "#00285e"], strength: "solid" },
-      { id: "inter-miami", name: "Inter Miami", shortName: "MIA", colors: ["#ff82ad", "#000000"], strength: "rising" },
-      { id: "philadelphia", name: "Philadelphia Union", shortName: "PHI", colors: ["#002d55", "#b4975a"], strength: "solid" },
-      { id: "toronto", name: "Toronto FC", shortName: "TOR", colors: ["#e31837", "#4b9cd3"], strength: "solid" },
-      { id: "new-england", name: "New England Revolution", shortName: "NER", colors: ["#0a2240", "#c8102e"], strength: "rising" },
-      { id: "columbus", name: "Columbus Crew", shortName: "CLB", colors: ["#fedd00", "#000000"], strength: "rising" }
+      {
+        id: "la-galaxy",
+        name: "LA Galaxy",
+        shortName: "LAG",
+        colors: ["#00245d", "#ffd200"],
+        strength: "solid",
+        mentality: "Positive",
+        marketValue: 85_000_000
+      },
+      {
+        id: "la-fc",
+        name: "LAFC",
+        shortName: "LAFC",
+        colors: ["#000000", "#c59d5f"],
+        strength: "solid",
+        marketValue: 95_000_000
+      },
+      {
+        id: "seattle",
+        name: "Seattle Sounders",
+        shortName: "SEA",
+        colors: ["#2c68b1", "#66b32e"],
+        strength: "solid",
+        marketValue: 80_000_000
+      },
+      {
+        id: "atlanta",
+        name: "Atlanta United",
+        shortName: "ATL",
+        colors: ["#a4000f", "#000000"],
+        strength: "solid",
+        marketValue: 90_000_000
+      },
+      {
+        id: "nycfc",
+        name: "NYCFC",
+        shortName: "NYC",
+        colors: ["#6cadde", "#00285e"],
+        strength: "solid",
+        marketValue: 75_000_000
+      },
+      {
+        id: "inter-miami",
+        name: "Inter Miami",
+        shortName: "MIA",
+        colors: ["#ff82ad", "#000000"],
+        strength: "rising",
+        marketValue: 150_000_000
+      },
+      {
+        id: "philadelphia",
+        name: "Philadelphia Union",
+        shortName: "PHI",
+        colors: ["#002d55", "#b4975a"],
+        strength: "solid",
+        marketValue: 60_000_000
+      },
+      {
+        id: "toronto",
+        name: "Toronto FC",
+        shortName: "TOR",
+        colors: ["#e31837", "#4b9cd3"],
+        strength: "solid",
+        marketValue: 50_000_000
+      },
+      {
+        id: "new-england",
+        name: "New England Revolution",
+        shortName: "NER",
+        colors: ["#0a2240", "#c8102e"],
+        strength: "rising",
+        marketValue: 55_000_000
+      },
+      {
+        id: "columbus",
+        name: "Columbus Crew",
+        shortName: "CLB",
+        colors: ["#fedd00", "#000000"],
+        strength: "rising",
+        marketValue: 70_000_000
+      }
     ]
   }),
   createSyntheticLeague({
@@ -313,16 +455,87 @@ const syntheticLeagues: LeagueData[] = [
     level: 1,
     nationCode: "BRA",
     clubs: [
-      { id: "flamengo", name: "Flamengo", shortName: "FLA", colors: ["#c8102e", "#000000"], strength: "contender", mentality: "Positive" },
-      { id: "palmeiras", name: "Palmeiras", shortName: "PAL", colors: ["#006437", "#ffffff"], strength: "contender" },
-      { id: "corinthians", name: "Corinthians", shortName: "COR", colors: ["#000000", "#ffffff"], strength: "challenger" },
-      { id: "sao-paulo", name: "São Paulo", shortName: "SAO", colors: ["#ff0000", "#000000"], strength: "challenger" },
-      { id: "gremio", name: "Grêmio", shortName: "GRE", colors: ["#0094d4", "#000000"], strength: "challenger" },
-      { id: "internacional", name: "Internacional", shortName: "INT", colors: ["#ff0000", "#ffffff"], strength: "challenger" },
-      { id: "atletico-mg", name: "Atlético Mineiro", shortName: "CAM", colors: ["#000000", "#ffffff"], strength: "challenger" },
-      { id: "fluminense", name: "Fluminense", shortName: "FLU", colors: ["#900021", "#006341"], strength: "solid" },
-      { id: "botafogo", name: "Botafogo", shortName: "BOT", colors: ["#000000", "#ffffff"], strength: "solid" },
-      { id: "santos", name: "Santos", shortName: "SAN", colors: ["#000000", "#ffffff"], strength: "solid" }
+      {
+        id: "flamengo",
+        name: "Flamengo",
+        shortName: "FLA",
+        colors: ["#c8102e", "#000000"],
+        strength: "contender",
+        mentality: "Positive",
+        marketValue: 195_000_000
+      },
+      {
+        id: "palmeiras",
+        name: "Palmeiras",
+        shortName: "PAL",
+        colors: ["#006437", "#ffffff"],
+        strength: "contender",
+        marketValue: 180_000_000
+      },
+      {
+        id: "corinthians",
+        name: "Corinthians",
+        shortName: "COR",
+        colors: ["#000000", "#ffffff"],
+        strength: "challenger",
+        marketValue: 110_000_000
+      },
+      {
+        id: "sao-paulo",
+        name: "São Paulo",
+        shortName: "SAO",
+        colors: ["#ff0000", "#000000"],
+        strength: "challenger",
+        marketValue: 125_000_000
+      },
+      {
+        id: "gremio",
+        name: "Grêmio",
+        shortName: "GRE",
+        colors: ["#0094d4", "#000000"],
+        strength: "challenger",
+        marketValue: 115_000_000
+      },
+      {
+        id: "internacional",
+        name: "Internacional",
+        shortName: "INT",
+        colors: ["#ff0000", "#ffffff"],
+        strength: "challenger",
+        marketValue: 110_000_000
+      },
+      {
+        id: "atletico-mg",
+        name: "Atlético Mineiro",
+        shortName: "CAM",
+        colors: ["#000000", "#ffffff"],
+        strength: "challenger",
+        marketValue: 140_000_000
+      },
+      {
+        id: "fluminense",
+        name: "Fluminense",
+        shortName: "FLU",
+        colors: ["#900021", "#006341"],
+        strength: "solid",
+        marketValue: 135_000_000
+      },
+      {
+        id: "botafogo",
+        name: "Botafogo",
+        shortName: "BOT",
+        colors: ["#000000", "#ffffff"],
+        strength: "solid",
+        marketValue: 95_000_000
+      },
+      {
+        id: "santos",
+        name: "Santos",
+        shortName: "SAN",
+        colors: ["#000000", "#ffffff"],
+        strength: "solid",
+        marketValue: 80_000_000
+      }
     ]
   }),
   createSyntheticLeague({
@@ -332,16 +545,87 @@ const syntheticLeagues: LeagueData[] = [
     level: 1,
     nationCode: "JPN",
     clubs: [
-      { id: "kawasaki-frontale", name: "Kawasaki Frontale", shortName: "KAW", colors: ["#00a0e9", "#000000"], strength: "challenger", mentality: "Positive" },
-      { id: "yokohama-f-marinos", name: "Yokohama F. Marinos", shortName: "YFM", colors: ["#00205b", "#d22f27"], strength: "challenger" },
-      { id: "kashima-antlers", name: "Kashima Antlers", shortName: "KAS", colors: ["#c8102e", "#00205b"], strength: "challenger" },
-      { id: "urawa-reds", name: "Urawa Reds", shortName: "URW", colors: ["#c8102e", "#000000"], strength: "challenger" },
-      { id: "cerezo-osaka", name: "Cerezo Osaka", shortName: "CER", colors: ["#ff5fa2", "#002a5c"], strength: "solid" },
-      { id: "gamba-osaka", name: "Gamba Osaka", shortName: "GAM", colors: ["#0c1b3a", "#0091d4"], strength: "solid" },
-      { id: "hiroshima", name: "Sanfrecce Hiroshima", shortName: "SAN", colors: ["#4c2f91", "#ffffff"], strength: "solid" },
-      { id: "vissel-kobe", name: "Vissel Kobe", shortName: "VIS", colors: ["#9c1830", "#ffffff"], strength: "solid" },
-      { id: "fc-tokyo", name: "FC Tokyo", shortName: "FCT", colors: ["#003da5", "#d50032"], strength: "solid" },
-      { id: "nagoya", name: "Nagoya Grampus", shortName: "NAG", colors: ["#e60012", "#f8b500"], strength: "solid" }
+      {
+        id: "kawasaki-frontale",
+        name: "Kawasaki Frontale",
+        shortName: "KAW",
+        colors: ["#00a0e9", "#000000"],
+        strength: "challenger",
+        mentality: "Positive",
+        marketValue: 38_000_000
+      },
+      {
+        id: "yokohama-f-marinos",
+        name: "Yokohama F. Marinos",
+        shortName: "YFM",
+        colors: ["#00205b", "#d22f27"],
+        strength: "challenger",
+        marketValue: 35_000_000
+      },
+      {
+        id: "kashima-antlers",
+        name: "Kashima Antlers",
+        shortName: "KAS",
+        colors: ["#c8102e", "#00205b"],
+        strength: "challenger",
+        marketValue: 32_000_000
+      },
+      {
+        id: "urawa-reds",
+        name: "Urawa Reds",
+        shortName: "URW",
+        colors: ["#c8102e", "#000000"],
+        strength: "challenger",
+        marketValue: 33_000_000
+      },
+      {
+        id: "cerezo-osaka",
+        name: "Cerezo Osaka",
+        shortName: "CER",
+        colors: ["#ff5fa2", "#002a5c"],
+        strength: "solid",
+        marketValue: 28_000_000
+      },
+      {
+        id: "gamba-osaka",
+        name: "Gamba Osaka",
+        shortName: "GAM",
+        colors: ["#0c1b3a", "#0091d4"],
+        strength: "solid",
+        marketValue: 27_000_000
+      },
+      {
+        id: "hiroshima",
+        name: "Sanfrecce Hiroshima",
+        shortName: "SAN",
+        colors: ["#4c2f91", "#ffffff"],
+        strength: "solid",
+        marketValue: 30_000_000
+      },
+      {
+        id: "vissel-kobe",
+        name: "Vissel Kobe",
+        shortName: "VIS",
+        colors: ["#9c1830", "#ffffff"],
+        strength: "solid",
+        marketValue: 45_000_000
+      },
+      {
+        id: "fc-tokyo",
+        name: "FC Tokyo",
+        shortName: "FCT",
+        colors: ["#003da5", "#d50032"],
+        strength: "solid",
+        marketValue: 26_000_000
+      },
+      {
+        id: "nagoya",
+        name: "Nagoya Grampus",
+        shortName: "NAG",
+        colors: ["#e60012", "#f8b500"],
+        strength: "solid",
+        marketValue: 34_000_000
+      }
     ]
   }),
   // Second tiers for the top six leagues
@@ -467,16 +751,106 @@ const syntheticLeagues: LeagueData[] = [
     level: 3,
     nationCode: "ENG",
     clubs: [
-      { id: "portsmouth", name: "Portsmouth", shortName: "POR", colors: ["#003399", "#ffffff"], strength: "rising", transferBudget: 12_000_000, wageBudget: 400_000 },
-      { id: "derby", name: "Derby County", shortName: "DER", colors: ["#000000", "#ffffff"], strength: "rising", transferBudget: 11_000_000, wageBudget: 380_000 },
-      { id: "bolton", name: "Bolton Wanderers", shortName: "BOL", colors: ["#001489", "#ffffff"], strength: "rising", transferBudget: 10_000_000, wageBudget: 360_000 },
-      { id: "blackpool", name: "Blackpool", shortName: "BLA", colors: ["#ff5f00", "#ffffff"], strength: "developing", transferBudget: 9_000_000, wageBudget: 340_000 },
-      { id: "charlton", name: "Charlton", shortName: "CHA", colors: ["#c60c30", "#ffffff"], strength: "developing", transferBudget: 8_000_000, wageBudget: 320_000 },
-      { id: "wycombe", name: "Wycombe", shortName: "WYC", colors: ["#4f9ec4", "#0f1c2c"], strength: "developing", transferBudget: 7_500_000, wageBudget: 300_000 },
-      { id: "peterborough", name: "Peterborough", shortName: "PET", colors: ["#0057b7", "#ffffff"], strength: "developing", transferBudget: 7_000_000, wageBudget: 280_000 },
-      { id: "oxford", name: "Oxford United", shortName: "OXF", colors: ["#f4c800", "#001489"], strength: "developing", transferBudget: 6_500_000, wageBudget: 260_000 },
-      { id: "barnsley", name: "Barnsley", shortName: "BAR", colors: ["#c8102e", "#ffffff"], strength: "developing", transferBudget: 6_000_000, wageBudget: 250_000 },
-      { id: "lincoln", name: "Lincoln City", shortName: "LIN", colors: ["#d4021d", "#ffffff"], strength: "developing", transferBudget: 5_500_000, wageBudget: 230_000 }
+      {
+        id: "portsmouth",
+        name: "Portsmouth",
+        shortName: "POR",
+        colors: ["#003399", "#ffffff"],
+        strength: "rising",
+        transferBudget: 12_000_000,
+        wageBudget: 400_000,
+        marketValue: 28_000_000
+      },
+      {
+        id: "derby",
+        name: "Derby County",
+        shortName: "DER",
+        colors: ["#000000", "#ffffff"],
+        strength: "rising",
+        transferBudget: 11_000_000,
+        wageBudget: 380_000,
+        marketValue: 26_000_000
+      },
+      {
+        id: "bolton",
+        name: "Bolton Wanderers",
+        shortName: "BOL",
+        colors: ["#001489", "#ffffff"],
+        strength: "rising",
+        transferBudget: 10_000_000,
+        wageBudget: 360_000,
+        marketValue: 24_000_000
+      },
+      {
+        id: "blackpool",
+        name: "Blackpool",
+        shortName: "BLA",
+        colors: ["#ff5f00", "#ffffff"],
+        strength: "developing",
+        transferBudget: 9_000_000,
+        wageBudget: 340_000,
+        marketValue: 16_000_000
+      },
+      {
+        id: "charlton",
+        name: "Charlton",
+        shortName: "CHA",
+        colors: ["#c60c30", "#ffffff"],
+        strength: "developing",
+        transferBudget: 8_000_000,
+        wageBudget: 320_000,
+        marketValue: 18_000_000
+      },
+      {
+        id: "wycombe",
+        name: "Wycombe",
+        shortName: "WYC",
+        colors: ["#4f9ec4", "#0f1c2c"],
+        strength: "developing",
+        transferBudget: 7_500_000,
+        wageBudget: 300_000,
+        marketValue: 12_000_000
+      },
+      {
+        id: "peterborough",
+        name: "Peterborough",
+        shortName: "PET",
+        colors: ["#0057b7", "#ffffff"],
+        strength: "developing",
+        transferBudget: 7_000_000,
+        wageBudget: 280_000,
+        marketValue: 20_000_000
+      },
+      {
+        id: "oxford",
+        name: "Oxford United",
+        shortName: "OXF",
+        colors: ["#f4c800", "#001489"],
+        strength: "developing",
+        transferBudget: 6_500_000,
+        wageBudget: 260_000,
+        marketValue: 15_000_000
+      },
+      {
+        id: "barnsley",
+        name: "Barnsley",
+        shortName: "BAR",
+        colors: ["#c8102e", "#ffffff"],
+        strength: "developing",
+        transferBudget: 6_000_000,
+        wageBudget: 250_000,
+        marketValue: 14_000_000
+      },
+      {
+        id: "lincoln",
+        name: "Lincoln City",
+        shortName: "LIN",
+        colors: ["#d4021d", "#ffffff"],
+        strength: "developing",
+        transferBudget: 5_500_000,
+        wageBudget: 230_000,
+        marketValue: 11_000_000
+      }
     ]
   }),
   createSyntheticLeague({
@@ -486,16 +860,106 @@ const syntheticLeagues: LeagueData[] = [
     level: 3,
     nationCode: "ESP",
     clubs: [
-      { id: "deportivo", name: "Deportivo La Coruña", shortName: "DEP", colors: ["#1d4ba0", "#ffffff"], strength: "rising", transferBudget: 8_500_000, wageBudget: 320_000 },
-      { id: "cordoba", name: "Córdoba", shortName: "COR", colors: ["#007a33", "#ffffff"], strength: "rising", transferBudget: 7_800_000, wageBudget: 300_000 },
-      { id: "cultural", name: "Cultural Leonesa", shortName: "CUL", colors: ["#ffffff", "#c8102e"], strength: "developing", transferBudget: 7_200_000, wageBudget: 280_000 },
-      { id: "murcia", name: "Real Murcia", shortName: "MUR", colors: ["#c8102e", "#ffffff"], strength: "developing", transferBudget: 6_800_000, wageBudget: 260_000 },
-      { id: "ponferradina", name: "Ponferradina", shortName: "PON", colors: ["#003399", "#ffffff"], strength: "developing", transferBudget: 6_500_000, wageBudget: 250_000 },
-      { id: "alcorcon", name: "Alcorcón", shortName: "ALC", colors: ["#ffd100", "#0033a0"], strength: "developing", transferBudget: 6_000_000, wageBudget: 230_000 },
-      { id: "sabadell", name: "Sabadell", shortName: "SAB", colors: ["#1b3f8b", "#ffffff"], strength: "developing", transferBudget: 5_800_000, wageBudget: 220_000 },
-      { id: "castellon", name: "Castellón", shortName: "CAS", colors: ["#000000", "#ffffff"], strength: "developing", transferBudget: 5_500_000, wageBudget: 210_000 },
-      { id: "ferrol", name: "Racing Ferrol", shortName: "FER", colors: ["#007f3a", "#ffffff"], strength: "developing", transferBudget: 5_200_000, wageBudget: 200_000 },
-      { id: "barcelona-b", name: "Barcelona Atlètic", shortName: "BARB", colors: ["#004d98", "#a50044"], strength: "developing", transferBudget: 5_000_000, wageBudget: 190_000 }
+      {
+        id: "deportivo",
+        name: "Deportivo La Coruña",
+        shortName: "DEP",
+        colors: ["#1d4ba0", "#ffffff"],
+        strength: "rising",
+        transferBudget: 8_500_000,
+        wageBudget: 320_000,
+        marketValue: 18_000_000
+      },
+      {
+        id: "cordoba",
+        name: "Córdoba",
+        shortName: "COR",
+        colors: ["#007a33", "#ffffff"],
+        strength: "rising",
+        transferBudget: 7_800_000,
+        wageBudget: 300_000,
+        marketValue: 16_000_000
+      },
+      {
+        id: "cultural",
+        name: "Cultural Leonesa",
+        shortName: "CUL",
+        colors: ["#ffffff", "#c8102e"],
+        strength: "developing",
+        transferBudget: 7_200_000,
+        wageBudget: 280_000,
+        marketValue: 9_000_000
+      },
+      {
+        id: "murcia",
+        name: "Real Murcia",
+        shortName: "MUR",
+        colors: ["#c8102e", "#ffffff"],
+        strength: "developing",
+        transferBudget: 6_800_000,
+        wageBudget: 260_000,
+        marketValue: 10_000_000
+      },
+      {
+        id: "ponferradina",
+        name: "Ponferradina",
+        shortName: "PON",
+        colors: ["#003399", "#ffffff"],
+        strength: "developing",
+        transferBudget: 6_500_000,
+        wageBudget: 250_000,
+        marketValue: 9_000_000
+      },
+      {
+        id: "alcorcon",
+        name: "Alcorcón",
+        shortName: "ALC",
+        colors: ["#ffd100", "#0033a0"],
+        strength: "developing",
+        transferBudget: 6_000_000,
+        wageBudget: 230_000,
+        marketValue: 8_500_000
+      },
+      {
+        id: "sabadell",
+        name: "Sabadell",
+        shortName: "SAB",
+        colors: ["#1b3f8b", "#ffffff"],
+        strength: "developing",
+        transferBudget: 5_800_000,
+        wageBudget: 220_000,
+        marketValue: 8_000_000
+      },
+      {
+        id: "castellon",
+        name: "Castellón",
+        shortName: "CAS",
+        colors: ["#000000", "#ffffff"],
+        strength: "developing",
+        transferBudget: 5_500_000,
+        wageBudget: 210_000,
+        marketValue: 8_500_000
+      },
+      {
+        id: "ferrol",
+        name: "Racing Ferrol",
+        shortName: "FER",
+        colors: ["#007f3a", "#ffffff"],
+        strength: "developing",
+        transferBudget: 5_200_000,
+        wageBudget: 200_000,
+        marketValue: 7_500_000
+      },
+      {
+        id: "barcelona-b",
+        name: "Barcelona Atlètic",
+        shortName: "BARB",
+        colors: ["#004d98", "#a50044"],
+        strength: "developing",
+        transferBudget: 5_000_000,
+        wageBudget: 190_000,
+        marketValue: 25_000_000
+      }
     ]
   }),
   createSyntheticLeague({
@@ -505,16 +969,106 @@ const syntheticLeagues: LeagueData[] = [
     level: 3,
     nationCode: "ITA",
     clubs: [
-      { id: "sudtirol", name: "Südtirol", shortName: "SUD", colors: ["#a50034", "#ffffff"], strength: "rising", transferBudget: 8_000_000, wageBudget: 320_000 },
-      { id: "padova", name: "Padova", shortName: "PAD", colors: ["#c8102e", "#ffffff"], strength: "rising", transferBudget: 7_500_000, wageBudget: 300_000 },
-      { id: "perugia", name: "Perugia", shortName: "PER", colors: ["#d50032", "#ffffff"], strength: "developing", transferBudget: 7_000_000, wageBudget: 280_000 },
-      { id: "ternana", name: "Ternana", shortName: "TER", colors: ["#007a33", "#d50032"], strength: "developing", transferBudget: 6_500_000, wageBudget: 260_000 },
-      { id: "modena", name: "Modena", shortName: "MOD", colors: ["#002d72", "#ffd200"], strength: "developing", transferBudget: 6_200_000, wageBudget: 240_000 },
-      { id: "cesena", name: "Cesena", shortName: "CES", colors: ["#000000", "#ffffff"], strength: "developing", transferBudget: 6_000_000, wageBudget: 230_000 },
-      { id: "catanzaro", name: "Catanzaro", shortName: "CAT", colors: ["#ff0000", "#ffff00"], strength: "developing", transferBudget: 5_800_000, wageBudget: 220_000 },
-      { id: "avellino", name: "Avellino", shortName: "AVE", colors: ["#007a3d", "#ffffff"], strength: "developing", transferBudget: 5_600_000, wageBudget: 210_000 },
-      { id: "monopoli", name: "Monopoli", shortName: "MON", colors: ["#00843d", "#ffffff"], strength: "developing", transferBudget: 5_400_000, wageBudget: 200_000 },
-      { id: "trieste", name: "Triestina", shortName: "TRI", colors: ["#c8102e", "#ffffff"], strength: "developing", transferBudget: 5_200_000, wageBudget: 190_000 }
+      {
+        id: "sudtirol",
+        name: "Südtirol",
+        shortName: "SUD",
+        colors: ["#a50034", "#ffffff"],
+        strength: "rising",
+        transferBudget: 8_000_000,
+        wageBudget: 320_000,
+        marketValue: 16_000_000
+      },
+      {
+        id: "padova",
+        name: "Padova",
+        shortName: "PAD",
+        colors: ["#c8102e", "#ffffff"],
+        strength: "rising",
+        transferBudget: 7_500_000,
+        wageBudget: 300_000,
+        marketValue: 14_000_000
+      },
+      {
+        id: "perugia",
+        name: "Perugia",
+        shortName: "PER",
+        colors: ["#d50032", "#ffffff"],
+        strength: "developing",
+        transferBudget: 7_000_000,
+        wageBudget: 280_000,
+        marketValue: 13_000_000
+      },
+      {
+        id: "ternana",
+        name: "Ternana",
+        shortName: "TER",
+        colors: ["#007a33", "#d50032"],
+        strength: "developing",
+        transferBudget: 6_500_000,
+        wageBudget: 260_000,
+        marketValue: 12_000_000
+      },
+      {
+        id: "modena",
+        name: "Modena",
+        shortName: "MOD",
+        colors: ["#002d72", "#ffd200"],
+        strength: "developing",
+        transferBudget: 6_200_000,
+        wageBudget: 240_000,
+        marketValue: 15_000_000
+      },
+      {
+        id: "cesena",
+        name: "Cesena",
+        shortName: "CES",
+        colors: ["#000000", "#ffffff"],
+        strength: "developing",
+        transferBudget: 6_000_000,
+        wageBudget: 230_000,
+        marketValue: 11_000_000
+      },
+      {
+        id: "catanzaro",
+        name: "Catanzaro",
+        shortName: "CAT",
+        colors: ["#ff0000", "#ffff00"],
+        strength: "developing",
+        transferBudget: 5_800_000,
+        wageBudget: 220_000,
+        marketValue: 10_000_000
+      },
+      {
+        id: "avellino",
+        name: "Avellino",
+        shortName: "AVE",
+        colors: ["#007a3d", "#ffffff"],
+        strength: "developing",
+        transferBudget: 5_600_000,
+        wageBudget: 210_000,
+        marketValue: 9_000_000
+      },
+      {
+        id: "monopoli",
+        name: "Monopoli",
+        shortName: "MON",
+        colors: ["#00843d", "#ffffff"],
+        strength: "developing",
+        transferBudget: 5_400_000,
+        wageBudget: 200_000,
+        marketValue: 8_000_000
+      },
+      {
+        id: "trieste",
+        name: "Triestina",
+        shortName: "TRI",
+        colors: ["#c8102e", "#ffffff"],
+        strength: "developing",
+        transferBudget: 5_200_000,
+        wageBudget: 190_000,
+        marketValue: 9_000_000
+      }
     ]
   })
 ];

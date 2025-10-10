@@ -7,6 +7,7 @@ A browser-based football management prototype built with TypeScript, Vite, and a
 - 🌍 **Global league world** – Manage any club across the top 10 divisions, with second tiers for the leading six nations and third tiers for the top three.
 - 🏟️ **Club onboarding** – Start each career by choosing your club from a glassmorphic selector. Your choice persists across saves and drives every dashboard view.
 - 🛠️ **Create-a-club** – Found a new team, pick league placement, colours, ambition, and let the game spin up a bespoke squad with budgets shaped by real-world valuations.
+- 📰 **Daily digest** – A full-height summary wall tracks the latest fixtures, standings context, and board notes as you advance through the calendar.
 - ⚽ **Seeded simulations** – Deterministic match engine with manual instant-result controls and daily scheduling so careers remain reproducible.
 - 📊 **Dynamic insights** – Standings browser, form trackers, scouting snapshots, and tactical breakdowns updated as you progress through the season.
 - 🤝 **Transfers & finances** – Market listings, bid flows, wage budgets, and club finances that update in real time.

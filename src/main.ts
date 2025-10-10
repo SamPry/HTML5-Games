@@ -13,6 +13,14 @@ type Theme = "light" | "dark";
 
 type DispatchResult = ReturnType<GameStore["dispatch"]>;
 
+type WorldMatch = World["results"][number];
+
+interface FlashMessage {
+  id: number;
+  text: string;
+  stamp: string;
+}
+
 const THEME_STORAGE_KEY = "hfm-theme";
 
 function getStoredTheme(): Theme | null {
@@ -48,6 +56,10 @@ let userSelectedTheme = storedTheme !== null;
 let activeTheme: Theme = storedTheme ?? detectSystemTheme();
 let standingsLeagueId: ID | null = null;
 let teamSelection: ReturnType<typeof createTeamSelectionModal> | null = null;
+let teamSelectionWasShown = false;
+
+const flashMessages: FlashMessage[] = [];
+let flashCounter = 0;
 
 function requireStore(): GameStore {
   if (!store) {
@@ -114,6 +126,15 @@ themeToggle.addEventListener("click", () => {
   applyTheme(activeTheme === "dark" ? "light" : "dark");
 });
 
+const clubSelectButton = document.createElement("button");
+clubSelectButton.type = "button";
+clubSelectButton.className = "secondary";
+clubSelectButton.textContent = "Choose Club";
+clubSelectButton.disabled = true;
+clubSelectButton.addEventListener("click", () => {
+  teamSelection?.open();
+});
+
 const advanceDayButton = document.createElement("button");
 advanceDayButton.textContent = "Advance Day";
 advanceDayButton.className = "primary";
@@ -129,11 +150,18 @@ advanceWeekButton.addEventListener("click", () => {
   handleCommandResult(result);
 });
 
-controls.append(themeToggle, advanceDayButton, advanceWeekButton);
+controls.append(themeToggle, clubSelectButton, advanceDayButton, advanceWeekButton);
 
 function setControlsEnabled(enabled: boolean): void {
   advanceDayButton.disabled = !enabled;
   advanceWeekButton.disabled = !enabled;
+}
+
+function updateClubControl(club: World["clubs"][number] | undefined): void {
+  const hasStore = Boolean(store);
+  clubSelectButton.disabled = !hasStore;
+  clubSelectButton.className = club ? "ghost" : "primary";
+  clubSelectButton.textContent = club ? "Change Club" : "Choose Club";
 }
 
 const navTitle = document.createElement("div");
@@ -235,12 +263,18 @@ function render(): void {
   const world = store.snapshot;
   const club = world.clubs.find((c) => c.id === world.userClubId);
   setControlsEnabled(Boolean(world.userClubId));
+  updateClubControl(club);
   if (!club) {
     title.textContent = "Choose your club";
     subtitle.textContent = "Select a team to begin your journey.";
+    if (!teamSelectionWasShown) {
+      teamSelectionWasShown = true;
+      window.setTimeout(() => teamSelection?.open(), 0);
+    }
   } else {
     title.textContent = club.name;
     subtitle.textContent = dateLabel(world.date);
+    teamSelectionWasShown = false;
   }
   const view = views[activeView];
   main.innerHTML = view.render(world);
@@ -250,6 +284,7 @@ function render(): void {
   if (view.bind) {
     view.bind(main, viewHelpers);
   }
+  renderDigest();
 }
 
 function updateNavigation(): void {
@@ -261,22 +296,118 @@ function updateNavigation(): void {
   });
 }
 
+const digestBodyId = "digest-body";
+
 const notifications = document.createElement("aside");
-notifications.className = "panel glass";
-notifications.innerHTML = "<div class=\"panel-header\"><span class=\"badge info\">Digest</span><h2>Daily Summary</h2></div><div id=\"notifications\" class=\"panel-body\"><p>No messages yet.</p></div>";
+notifications.className = "panel glass digest-panel";
+notifications.innerHTML = `
+  <div class="panel-header">
+    <span class="badge info">Digest</span>
+    <h2>Daily Summary</h2>
+  </div>
+  <div id="${digestBodyId}" class="panel-body digest-body">
+    <p class="empty">Building the world…</p>
+  </div>
+`;
 workspace.append(notifications);
+renderDigest();
 
 function notify(message: string): void {
-  const container = document.getElementById("notifications");
-  if (!container) return;
-  const list = container.querySelector("ul") ?? document.createElement("ul");
-  if (!list.parentElement) {
-    container.innerHTML = "";
-    container.appendChild(list);
+  if (!message) return;
+  const existingIndex = flashMessages.findIndex((entry) => entry.text === message);
+  if (existingIndex >= 0) {
+    flashMessages.splice(existingIndex, 1);
   }
-  const item = document.createElement("li");
-  item.textContent = message;
-  list.prepend(item);
+  flashCounter += 1;
+  const stamp = store ? dateLabel(store.snapshot.date) : new Date().toLocaleString();
+  flashMessages.unshift({ id: flashCounter, text: message, stamp });
+  if (flashMessages.length > 8) {
+    flashMessages.length = 8;
+  }
+  renderDigest();
+}
+
+function renderDigest(): void {
+  const container = document.getElementById(digestBodyId);
+  if (!container) {
+    return;
+  }
+  if (!store) {
+    container.innerHTML = '<p class="empty">Building the world…</p>';
+    return;
+  }
+
+  const world = store.snapshot;
+  const summary = store.summary;
+  const matches: WorldMatch[] = summary && summary.matches.length
+    ? summary.matches
+    : world.results.slice(0, 3);
+  const messages = flashMessages.slice(0, 6);
+
+  const scoreboard = matches.length
+    ? `<ul class="digest-matches">${matches
+        .map((match) => renderDigestMatch(world, match))
+        .join("")}</ul>`
+    : '<p class="empty">No fixtures have been completed yet.</p>';
+
+  const messageList = messages.length
+    ? `<ul class="digest-messages">${messages
+        .map(
+          (entry) =>
+            `<li><span class="message-text">${entry.text}</span><span class="message-meta">${entry.stamp}</span></li>`
+        )
+        .join("")}</ul>`
+    : '<p class="empty">Advance time to receive board updates, transfer news, and fixtures.</p>';
+
+  container.innerHTML = `
+    <div class="digest-date">
+      <span class="eyebrow">Season status</span>
+      <strong>${dateLabel(world.date)}</strong>
+    </div>
+    <div class="digest-section">
+      <h3>Latest results</h3>
+      ${scoreboard}
+    </div>
+    <div class="digest-section">
+      <h3>Headlines</h3>
+      ${messageList}
+    </div>
+  `;
+}
+
+function renderDigestMatch(world: World, match: WorldMatch): string {
+  const fixture = world.fixtures.find((entry) => entry.id === match.fixtureId);
+  const homeId = fixture?.homeId ?? match.stats[0]?.clubId ?? "home";
+  const awayId = fixture?.awayId ?? match.stats[1]?.clubId ?? "away";
+  const home = clubName(world, homeId);
+  const away = clubName(world, awayId);
+  const competition = fixture
+    ? world.leagues.find((league) => league.id === fixture.competitionId)?.name ?? "Competition"
+    : "Competition";
+  const matchDate = fixture ? formatDigestDate(fixture.date) : dateLabel(world.date);
+  const userInvolved = homeId === world.userClubId || awayId === world.userClubId;
+  const score = `${match.score.home}-${match.score.away}`;
+  return `
+    <li class="${userInvolved ? "highlight" : ""}">
+      <div class="digest-match-clubs">
+        <span class="club home">${home}</span>
+        <span class="score">${score}</span>
+        <span class="club away">${away}</span>
+      </div>
+      <div class="digest-match-meta">
+        <span>${competition}</span>
+        <span>${matchDate}</span>
+      </div>
+    </li>
+  `;
+}
+
+function formatDigestDate(date: World["date"]): string {
+  return `Week ${date.week + 1}, Day ${date.day + 1}`;
+}
+
+function clubName(world: World, id: ID): string {
+  return world.clubs.find((club) => club.id === id)?.name ?? id;
 }
 
 function handleCommandResult(result: DispatchResult) {
@@ -622,6 +753,7 @@ function initializeStore(): void {
       render();
       if (!currentStore.snapshot.userClubId) {
         teamSelection?.open();
+        teamSelectionWasShown = true;
       } else {
         bootstrapSeason();
       }

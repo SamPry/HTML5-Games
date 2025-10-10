@@ -228,7 +228,7 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
   gap: 24px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .content {
@@ -277,6 +277,96 @@ body {
   padding: 12px;
   border-radius: var(--radius-md);
   border: 1px solid var(--veil-3);
+}
+
+.digest-panel {
+  height: 100%;
+}
+
+.digest-body {
+  flex: 1;
+  overflow-y: auto;
+  gap: 18px;
+}
+
+.digest-date {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.digest-date strong {
+  font-size: 1rem;
+}
+
+.digest-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.digest-section h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.digest-matches,
+.digest-messages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.digest-matches li,
+.digest-messages li {
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--veil-3);
+  background: var(--veil-2);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.digest-matches li.highlight {
+  border-color: rgba(var(--accent-rgb), 0.4);
+  background: rgba(var(--accent-rgb), 0.14);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.18) inset;
+}
+
+.digest-match-clubs {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+}
+
+.digest-match-clubs .score {
+  font-size: 1.3rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.digest-match-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.digest-messages .message-text {
+  font-weight: 500;
+}
+
+.digest-messages .message-meta {
+  color: var(--text-muted);
+  font-size: 0.78rem;
 }
 
 .card {
